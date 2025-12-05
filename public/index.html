@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>코스피/코스닥 통합 대시보드 (진단 모드)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Original App Styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .num-font { font-family: 'Roboto Mono', monospace; letter-spacing: -0.5px; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        .stock-item {
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: all 0.2s ease;
+            border-radius: 0.5rem;
+            border: 1px solid transparent;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 5rem;
+        }
+        .stock-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+        .stock-item.active {
+            ring: 2px solid #4f46e5;
+            ring-offset: 1px;
+            z-index: 20;
+            background-color: #ffffff;
+            border-color: #4f46e5;
+        }
+        .bg-up { background-color: #fff1f2; border-color: #fecdd3; }
+        .bg-down { background-color: #eff6ff; border-color: #bfdbfe; }
+        .text-up { color: #e11d48; }
+        .text-down { color: #2563eb; }
+        .global-card {
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .rank-badge {
+            font-size: 0.6rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 9999px;
+            font-weight: 800;
+            color: white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .rank-kospi { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .rank-kosdaq { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .loading { animation: pulse-soft 1.5s infinite; }
+        @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        /* Error Banner */
+        #error-banner {
+            display: none;
+            background-color: #fee2e2;
+            border-bottom: 1px solid #ef4444;
+            color: #b91c1c;
+            padding: 0.5rem;
+            font-size: 0.75rem;
+            text-align: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body class="p-3 h-screen w-screen overflow-hidden text-slate-800 flex flex-col gap-3">
+
+    <!-- Error Diagnostic Banner -->
+    <div id="error-banner"></div>
+
+    <!-- 1. Header & Controls -->
+    <header class="flex-none flex items-center justify-between bg-white px-4 py-3 rounded-xl shadow-sm border border-slate-200 mt-2">
+        <div class="flex items-center space-x-4">
+            <h1 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                <span>📈</span>
+                <span>Market Dashboard</span>
+            </h1>
+            <span id="last-updated" class="text-xs text-slate-400 border-l pl-3 hidden sm:inline font-mono">
+                Initialize...
+            </span>
+        </div>
+        
+        <div class="flex items-center gap-2">
+            <button onclick="app.refreshData()" class="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="데이터 새로고침">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            </button>
+            <div class="inline-flex p-1 bg-slate-100 rounded-lg">
+                <button id="filter-all" onclick="app.setFilter('ALL')" class="px-3 py-1.5 text-xs font-bold rounded-md transition-all">ALL</button>
+                <button id="filter-kospi" onclick="app.setFilter('KOSPI')" class="px-3 py-1.5 text-xs font-bold rounded-md transition-all">KOSPI</button>
+                <button id="filter-kosdaq" onclick="app.setFilter('KOSDAQ')" class="px-3 py-1.5 text-xs font-bold rounded-md transition-all">KOSDAQ</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 2. Global Market Indicators -->
+    <section id="global-stats" class="flex-none grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <!-- JS Rendered -->
+    </section>
+    
+    <!-- 3. Main Split View -->
+    <main class="flex-1 min-h-0 flex flex-col lg:flex-row gap-4">
+        <section class="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-h-0 min-w-0">
+            <div class="flex-none px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                <h2 class="text-sm font-bold text-slate-700 flex items-center">
+                    <span class="w-1.5 h-4 bg-indigo-600 rounded-full mr-2"></span>
+                    시장 지도 (Market Map)
+                </h2>
+                <div class="text-[10px] text-slate-400 bg-white px-2 py-1 rounded border">Market Cap Weighted</div>
+            </div>
+            <div id="loading-overlay" class="hidden absolute inset-0 bg-white/80 z-50 flex items-center justify-center">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-3 custom-scroll bg-slate-50/50">
+                <div id="industry-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                    <!-- Cards -->
+                </div>
+            </div>
+        </section>
+
+        <aside class="flex-none w-full lg:w-80 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-h-0">
+            <div class="flex-none p-5 border-b border-slate-50">
+                <div class="flex justify-between items-start mb-1">
+                    <span id="detail-badge" class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded">MARKET</span>
+                    <span id="detail-industry" class="text-xs text-slate-400 font-medium truncate ml-2">Sector</span>
+                </div>
+                <div class="flex justify-between items-end">
+                    <h2 id="detail-name" class="text-xl font-black text-slate-900 leading-tight">Loading...</h2>
+                    <span id="detail-code" class="text-xs text-slate-400 num-font mb-1">------</span>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-5 custom-scroll">
+                <div class="mb-6">
+                    <div class="flex items-baseline space-x-2">
+                        <span id="detail-price" class="text-3xl font-black num-font text-slate-900">-</span>
+                        <span class="text-xs text-slate-500 font-medium">KRW</span>
+                    </div>
+                    <div class="flex items-center mt-2 space-x-2">
+                        <span id="detail-change" class="text-md font-bold num-font">-</span>
+                        <span id="detail-rate" class="px-2 py-0.5 rounded text-[10px] font-bold num-font">-</span>
+                    </div>
+                </div>
+                <div class="mb-6 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div class="flex justify-between text-[10px] text-slate-400 mb-1 font-semibold">
+                        <span>Day Low</span>
+                        <span>Day High</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-200 rounded-full relative mt-1">
+                        <div class="absolute top-0 bottom-0 bg-slate-400 rounded-full w-full opacity-30"></div>
+                        <div id="price-dot" class="w-3 h-3 bg-indigo-600 border-2 border-white rounded-full absolute top-1/2 -translate-y-1/2 shadow-sm" style="left: 50%;"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] num-font text-slate-400 mt-2">
+                        <span id="sim-low">-</span>
+                        <span id="sim-high">-</span>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <h4 class="text-xs font-bold text-slate-800 mb-3 flex items-center">
+                        <span class="w-1 h-3 bg-slate-800 mr-2 rounded-full"></span>
+                        관련 뉴스
+                    </h4>
+                    <div id="news-list" class="space-y-2"></div>
+                </div>
+            </div>
+            <div class="flex-none p-3 border-t border-slate-50 bg-slate-50/50 rounded-b-xl grid grid-cols-2 gap-2">
+                <a id="naver-link" href="#" target="_blank" class="flex justify-center items-center py-2.5 rounded-lg bg-[#03C75A] hover:bg-[#02b350] text-white font-bold text-xs transition shadow-sm shadow-green-100">네이버 증권</a>
+                <a id="dart-link" href="#" target="_blank" class="flex justify-center items-center py-2.5 rounded-lg bg-[#F3B648] hover:bg-[#e0a435] text-white font-bold text-xs transition shadow-sm shadow-yellow-100">DART 공시</a>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        // [Safety Check] Global Error Handler
+        window.onerror = function(message, source, lineno, colno, error) {
+            const banner = document.getElementById('error-banner');
+            banner.style.display = 'block';
+            banner.textContent = `⚠️ 오류 발생: ${message} (Line: ${lineno}) - 앱이 정지된 경우 새로고침 해주세요.`;
+            console.error("Dashboard Error:", error);
+            return false;
+        };
+
+        /**
+         * [API Service Layer]
+         * Mock Data Service - Safe Mode
+         */
+        class StockApiService {
+            constructor() {
+                // 2025-12-04 Snapshot Data
+                this.db = {
+                    global: [
+                        { name: 'KOSPI', value: 4023.74, change: -12.45, rate: -0.31 },
+                        { name: 'KOSDAQ', value: 932.01, change: 3.59, rate: 0.39 },
+                        { name: 'USD/KRW', value: 1472.09, change: 7.00, rate: 0.47 },
+                        { name: 'Samsung', value: 105100, change: 600, rate: 0.57 },
+                        { name: 'SK Hynix', value: 542000, change: -10000, rate: -1.81 },
+                        { name: 'NASDAQ(F)', value: 25647.50, change: -10.00, rate: -0.04 }
+                    ],
+                    stocks: [
+                        // --- KOSPI Top 60 ---
+                        { rank: 1, name: '삼성전자', code: '005930', market: 'KOSPI', price: 105100, change: 600, rate: 0.57, industry: '반도체' },
+                        { rank: 2, name: 'SK하이닉스', code: '000660', market: 'KOSPI', price: 542000, change: -10000, rate: -1.81, industry: '반도체' },
+                        { rank: 3, name: 'LG에너지솔루션', code: '373220', market: 'KOSPI', price: 442000, change: 2000, rate: 0.45, industry: '2차전지' },
+                        { rank: 4, name: '삼성바이오로직스', code: '207940', market: 'KOSPI', price: 980000, change: 15000, rate: 1.55, industry: '바이오' },
+                        { rank: 5, name: '현대차', code: '005380', market: 'KOSPI', price: 265000, change: -1000, rate: -0.38, industry: '자동차' },
+                        { rank: 6, name: '기아', code: '000270', market: 'KOSPI', price: 121000, change: 500, rate: 0.41, industry: '자동차' },
+                        { rank: 7, name: '셀트리온', code: '068270', market: 'KOSPI', price: 192000, change: -2000, rate: -1.03, industry: '바이오' },
+                        { rank: 8, name: 'KB금융', code: '105560', market: 'KOSPI', price: 82000, change: 1200, rate: 1.49, industry: '금융' },
+                        { rank: 9, name: 'NAVER', code: '035420', market: 'KOSPI', price: 195000, change: -1500, rate: -0.76, industry: '플랫폼' },
+                        { rank: 10, name: 'POSCO홀딩스', code: '005490', market: 'KOSPI', price: 455000, change: 4000, rate: 0.89, industry: '철강' },
+                        { rank: 11, name: '카카오', code: '035720', market: 'KOSPI', price: 52000, change: -500, rate: -0.95, industry: '플랫폼' },
+                        { rank: 12, name: '삼성SDI', code: '006400', market: 'KOSPI', price: 385000, change: 0, rate: 0.00, industry: '2차전지' },
+                        { rank: 13, name: 'LG화학', code: '051910', market: 'KOSPI', price: 390000, change: -3000, rate: -0.76, industry: '화학' },
+                        { rank: 14, name: '신한지주', code: '055550', market: 'KOSPI', price: 54000, change: 600, rate: 1.12, industry: '금융' },
+                        { rank: 15, name: '현대모비스', code: '012330', market: 'KOSPI', price: 245000, change: -1000, rate: -0.41, industry: '자동차' },
+                        { rank: 16, name: '포스코퓨처엠', code: '003670', market: 'KOSPI', price: 320000, change: 5000, rate: 1.59, industry: '2차전지' },
+                        { rank: 17, name: '하나금융지주', code: '086790', market: 'KOSPI', price: 62000, change: 800, rate: 1.31, industry: '금융' },
+                        { rank: 18, name: 'LG전자', code: '066570', market: 'KOSPI', price: 105000, change: -500, rate: -0.47, industry: 'IT가전' },
+                        { rank: 19, name: '삼성물산', code: '028260', market: 'KOSPI', price: 145000, change: 1000, rate: 0.69, industry: '지주사' },
+                        { rank: 20, name: '메리츠금융', code: '138040', market: 'KOSPI', price: 78000, change: 1500, rate: 1.96, industry: '금융' },
+                        { rank: 21, name: 'SK이노베이션', code: '096770', market: 'KOSPI', price: 115000, change: -1500, rate: -1.29, industry: '정유/화학' },
+                        { rank: 22, name: '한국전력', code: '015760', market: 'KOSPI', price: 21000, change: 100, rate: 0.48, industry: '유틸리티' },
+                        { rank: 23, name: '크래프톤', code: '259960', market: 'KOSPI', price: 295000, change: -3000, rate: -1.01, industry: '게임' },
+                        { rank: 24, name: 'KT&G', code: '033780', market: 'KOSPI', price: 92000, change: 500, rate: 0.55, industry: '음식료' },
+                        { rank: 25, name: '삼성생명', code: '032830', market: 'KOSPI', price: 89000, change: 1000, rate: 1.14, industry: '보험' },
+                        { rank: 26, name: 'HD현대중공업', code: '329180', market: 'KOSPI', price: 135000, change: 2500, rate: 1.89, industry: '조선' },
+                        { rank: 27, name: '삼성전기', code: '009150', market: 'KOSPI', price: 155000, change: -500, rate: -0.32, industry: 'IT부품' },
+                        { rank: 28, name: 'HMM', code: '011200', market: 'KOSPI', price: 18500, change: -200, rate: -1.07, industry: '해운' },
+                        { rank: 29, name: '두산에너빌리티', code: '034020', market: 'KOSPI', price: 19500, change: 300, rate: 1.56, industry: '기계' },
+                        { rank: 30, name: 'SK텔레콤', code: '017670', market: 'KOSPI', price: 54000, change: 200, rate: 0.37, industry: '통신' },
+                        { rank: 31, name: '우리금융지주', code: '316140', market: 'KOSPI', price: 15200, change: 100, rate: 0.66, industry: '금융' },
+                        { rank: 32, name: '기업은행', code: '024110', market: 'KOSPI', price: 13500, change: 50, rate: 0.37, industry: '금융' },
+                        { rank: 33, name: 'LG생활건강', code: '051900', market: 'KOSPI', price: 350000, change: -4000, rate: -1.13, industry: '화장품' },
+                        { rank: 34, name: 'S-Oil', code: '010950', market: 'KOSPI', price: 68000, change: -500, rate: -0.73, industry: '정유' },
+                        { rank: 35, name: '삼성화재', code: '000810', market: 'KOSPI', price: 315000, change: 3000, rate: 0.96, industry: '보험' },
+                        { rank: 36, name: '하이브', code: '352820', market: 'KOSPI', price: 210000, change: -2500, rate: -1.18, industry: '엔터' },
+                        { rank: 37, name: '고려아연', code: '010130', market: 'KOSPI', price: 520000, change: 4000, rate: 0.78, industry: '철강' },
+                        { rank: 38, name: 'KT', code: '030200', market: 'KOSPI', price: 38000, change: 300, rate: 0.80, industry: '통신' },
+                        { rank: 39, name: '대한항공', code: '003490', market: 'KOSPI', price: 24500, change: 200, rate: 0.82, industry: '항공' },
+                        { rank: 40, name: '카카오뱅크', code: '323410', market: 'KOSPI', price: 26500, change: -300, rate: -1.12, industry: '금융' },
+                        { rank: 41, name: 'SK', code: '034730', market: 'KOSPI', price: 165000, change: 1000, rate: 0.61, industry: '지주사' },
+                        { rank: 42, name: '한국조선해양', code: '009540', market: 'KOSPI', price: 112000, change: 1500, rate: 1.36, industry: '조선' },
+                        { rank: 43, name: '한화에어로스페이스', code: '012450', market: 'KOSPI', price: 195000, change: 4000, rate: 2.09, industry: '방산' },
+                        { rank: 44, name: '삼성에스디에스', code: '018260', market: 'KOSPI', price: 155000, change: -1000, rate: -0.64, industry: 'IT서비스' },
+                        { rank: 45, name: '엔씨소프트', code: '036570', market: 'KOSPI', price: 185000, change: -2000, rate: -1.07, industry: '게임' },
+                        { rank: 46, name: '아모레퍼시픽', code: '090430', market: 'KOSPI', price: 135000, change: -1500, rate: -1.10, industry: '화장품' },
+                        { rank: 47, name: 'LG이노텍', code: '011070', market: 'KOSPI', price: 235000, change: 1000, rate: 0.43, industry: 'IT부품' },
+                        { rank: 48, name: '한화솔루션', code: '009830', market: 'KOSPI', price: 28500, change: -300, rate: -1.04, industry: '화학' },
+                        { rank: 49, name: '롯데케미칼', code: '011170', market: 'KOSPI', price: 125000, change: -1000, rate: -0.79, industry: '화학' },
+                        { rank: 50, name: 'HD현대일렉트릭', code: '267260', market: 'KOSPI', price: 185000, change: 5000, rate: 2.78, industry: '기계' },
+                        { rank: 51, name: 'SK바이오팜', code: '326030', market: 'KOSPI', price: 92000, change: 1500, rate: 1.66, industry: '바이오' },
+                        { rank: 52, name: '현대제철', code: '004020', market: 'KOSPI', price: 33500, change: 100, rate: 0.30, industry: '철강' },
+                        { rank: 53, name: '넷마블', code: '251270', market: 'KOSPI', price: 58000, change: -500, rate: -0.85, industry: '게임' },
+                        { rank: 54, name: 'CJ제일제당', code: '097950', market: 'KOSPI', price: 310000, change: 2000, rate: 0.65, industry: '음식료' },
+                        { rank: 55, name: '강원랜드', code: '035250', market: 'KOSPI', price: 16500, change: 50, rate: 0.30, industry: '레저' },
+                        { rank: 56, name: '유한양행', code: '000100', market: 'KOSPI', price: 68000, change: 800, rate: 1.19, industry: '제약' },
+                        { rank: 57, name: '한미반도체', code: '042700', market: 'KOSPI', price: 145000, change: 4500, rate: 3.20, industry: '반도체' },
+                        { rank: 58, name: '금호석유', code: '011780', market: 'KOSPI', price: 142000, change: -1000, rate: -0.70, industry: '화학' },
+                        { rank: 59, name: '현대글로비스', code: '086280', market: 'KOSPI', price: 185000, change: 1000, rate: 0.54, industry: '물류' },
+                        { rank: 60, name: 'F&F', code: '383220', market: 'KOSPI', price: 72000, change: -500, rate: -0.69, industry: '의류' },
+
+                        // --- KOSDAQ Top 60 ---
+                        { rank: 1, name: '에코프로비엠', code: '247540', market: 'KOSDAQ', price: 265000, change: 5000, rate: 1.92, industry: '2차전지' },
+                        { rank: 2, name: '알테오젠', code: '196170', market: 'KOSDAQ', price: 345000, change: 12000, rate: 3.60, industry: '바이오' },
+                        { rank: 3, name: '에코프로', code: '086520', market: 'KOSDAQ', price: 94100, change: 1100, rate: 1.27, industry: '2차전지' },
+                        { rank: 4, name: 'HLB', code: '028300', market: 'KOSDAQ', price: 82000, change: -1500, rate: -1.80, industry: '바이오' },
+                        { rank: 5, name: '리가켐바이오', code: '141080', market: 'KOSDAQ', price: 125000, change: 3000, rate: 2.46, industry: '바이오' },
+                        { rank: 6, name: '엔켐', code: '348370', market: 'KOSDAQ', price: 210000, change: -5000, rate: -2.33, industry: '2차전지' },
+                        { rank: 7, name: '휴젤', code: '145020', market: 'KOSDAQ', price: 285000, change: 2000, rate: 0.71, industry: '의료기기' },
+                        { rank: 8, name: '클래시스', code: '214150', market: 'KOSDAQ', price: 52000, change: 1500, rate: 2.97, industry: '의료기기' },
+                        { rank: 9, name: '리노공업', code: '058470', market: 'KOSDAQ', price: 245000, change: 4000, rate: 1.66, industry: '반도체' },
+                        { rank: 10, name: 'HPSP', code: '403870', market: 'KOSDAQ', price: 42000, change: -800, rate: -1.87, industry: '반도체' },
+                        { rank: 11, name: '레인보우로보틱스', code: '277810', market: 'KOSDAQ', price: 165000, change: 3500, rate: 2.17, industry: '로봇' },
+                        { rank: 12, name: '펄어비스', code: '263750', market: 'KOSDAQ', price: 38500, change: -500, rate: -1.28, industry: '게임' },
+                        { rank: 13, name: '셀트리온제약', code: '068760', market: 'KOSDAQ', price: 92000, change: -1000, rate: -1.08, industry: '제약' },
+                        { rank: 14, name: '삼천당제약', code: '000250', market: 'KOSDAQ', price: 145000, change: 2000, rate: 1.40, industry: '제약' },
+                        { rank: 15, name: '실리콘투', code: '257720', market: 'KOSDAQ', price: 42000, change: 1500, rate: 3.70, industry: '화장품' },
+                        { rank: 16, name: '솔브레인', code: '357780', market: 'KOSDAQ', price: 285000, change: -2000, rate: -0.70, industry: '반도체' },
+                        { rank: 17, name: 'JYP Ent.', code: '035900', market: 'KOSDAQ', price: 58000, change: -500, rate: -0.85, industry: '엔터' },
+                        { rank: 18, name: '이오테크닉스', code: '039030', market: 'KOSDAQ', price: 175000, change: 3000, rate: 1.74, industry: '반도체' },
+                        { rank: 19, name: '동진쎄미켐', code: '005290', market: 'KOSDAQ', price: 38000, change: 200, rate: 0.53, industry: '반도체' },
+                        { rank: 20, name: '원익IPS', code: '240810', market: 'KOSDAQ', price: 34500, change: 500, rate: 1.47, industry: '반도체' },
+                        { rank: 21, name: '카카오게임즈', code: '293490', market: 'KOSDAQ', price: 19500, change: -200, rate: -1.02, industry: '게임' },
+                        { rank: 22, name: '에스엠', code: '041510', market: 'KOSDAQ', price: 72000, change: -1000, rate: -1.37, industry: '엔터' },
+                        { rank: 23, name: '파마리서치', code: '214450', market: 'KOSDAQ', price: 185000, change: 4000, rate: 2.21, industry: '의료기기' },
+                        { rank: 24, name: 'CJ ENM', code: '035760', market: 'KOSDAQ', price: 78000, change: 500, rate: 0.65, industry: '미디어' },
+                        { rank: 25, name: '스튜디오드래곤', code: '253450', market: 'KOSDAQ', price: 42000, change: -300, rate: -0.71, industry: '미디어' },
+                        { rank: 26, name: '더블유씨피', code: '393890', market: 'KOSDAQ', price: 38000, change: -500, rate: -1.30, industry: '2차전지' },
+                        { rank: 27, name: '대주전자재료', code: '078600', market: 'KOSDAQ', price: 95000, change: 2000, rate: 2.15, industry: '2차전지' },
+                        { rank: 28, name: '나노신소재', code: '121600', market: 'KOSDAQ', price: 115000, change: 1500, rate: 1.32, industry: '2차전지' },
+                        { rank: 29, name: '제이앤티씨', code: '204270', market: 'KOSDAQ', price: 22000, change: 800, rate: 3.77, industry: 'IT부품' },
+                        { rank: 30, name: '피엔티', code: '137400', market: 'KOSDAQ', price: 54000, change: -500, rate: -0.92, industry: '2차전지' },
+                        { rank: 31, name: '에스티팜', code: '237690', market: 'KOSDAQ', price: 98000, change: 2000, rate: 2.08, industry: '바이오' },
+                        { rank: 32, name: '씨젠', code: '096530', market: 'KOSDAQ', price: 24500, change: 100, rate: 0.41, industry: '바이오' },
+                        { rank: 33, name: 'ISC', code: '095340', market: 'KOSDAQ', price: 78000, change: 1000, rate: 1.30, industry: '반도체' },
+                        { rank: 34, name: '티씨케이', code: '064760', market: 'KOSDAQ', price: 105000, change: -1000, rate: -0.94, industry: '반도체' },
+                        { rank: 35, name: '주성엔지니어링', code: '036930', market: 'KOSDAQ', price: 32000, change: 500, rate: 1.59, industry: '반도체' },
+                        { rank: 36, name: 'SOOP', code: '067160', market: 'KOSDAQ', price: 115000, change: -2000, rate: -1.71, industry: '플랫폼' },
+                        { rank: 37, name: '와이지엔터테인먼트', code: '122870', market: 'KOSDAQ', price: 38000, change: -500, rate: -1.30, industry: '엔터' },
+                        { rank: 38, name: '넥슨게임즈', code: '225570', market: 'KOSDAQ', price: 15500, change: 200, rate: 1.31, industry: '게임' },
+                        { rank: 39, name: '루닛', code: '328130', market: 'KOSDAQ', price: 48000, change: 1000, rate: 2.13, industry: '의료AI' },
+                        { rank: 40, name: 'HK이노엔', code: '195940', market: 'KOSDAQ', price: 42000, change: 500, rate: 1.20, industry: '제약' },
+                        { rank: 41, name: '휴온스', code: '243070', market: 'KOSDAQ', price: 32000, change: 100, rate: 0.31, industry: '제약' },
+                        { rank: 42, name: '에이비엘바이오', code: '298380', market: 'KOSDAQ', price: 34000, change: 800, rate: 2.41, industry: '바이오' },
+                        { rank: 43, name: '오스코텍', code: '039200', market: 'KOSDAQ', price: 38000, change: 500, rate: 1.33, industry: '바이오' },
+                        { rank: 44, name: '차바이오텍', code: '085660', market: 'KOSDAQ', price: 14500, change: -100, rate: -0.68, industry: '바이오' },
+                        { rank: 45, name: '메디톡스', code: '086900', market: 'KOSDAQ', price: 142000, change: -2000, rate: -1.39, industry: '바이오' },
+                        { rank: 46, name: '파크시스템스', code: '140860', market: 'KOSDAQ', price: 165000, change: 3000, rate: 1.85, industry: '반도체' },
+                        { rank: 47, name: '고영', code: '098460', market: 'KOSDAQ', price: 13500, change: 100, rate: 0.75, industry: '반도체' },
+                        { rank: 48, name: '심텍', code: '222800', market: 'KOSDAQ', price: 24000, change: -200, rate: -0.83, industry: '반도체' },
+                        { rank: 49, name: '하나마이크론', code: '067310', market: 'KOSDAQ', price: 18500, change: 300, rate: 1.65, industry: '반도체' },
+                        { rank: 50, name: '두산테스나', code: '131970', market: 'KOSDAQ', price: 38000, change: 500, rate: 1.33, industry: '반도체' },
+                        { rank: 51, name: '비에이치', code: '090460', market: 'KOSDAQ', price: 19500, change: 200, rate: 1.04, industry: 'IT부품' },
+                        { rank: 52, name: '엠로', code: '058970', market: 'KOSDAQ', price: 62000, change: 1000, rate: 1.64, industry: '소프트웨어' },
+                        { rank: 53, name: '카페24', code: '042000', market: 'KOSDAQ', price: 28000, change: -500, rate: -1.75, industry: '플랫폼' },
+                        { rank: 54, name: '아프리카TV', code: '067160', market: 'KOSDAQ', price: 105000, change: -1000, rate: -0.94, industry: '플랫폼' },
+                        { rank: 55, name: '위메이드', code: '112040', market: 'KOSDAQ', price: 42000, change: -1000, rate: -2.33, industry: '게임' },
+                        { rank: 56, name: '천보', code: '278280', market: 'KOSDAQ', price: 75000, change: -1500, rate: -1.96, industry: '2차전지' },
+                        { rank: 57, name: '성우하이텍', code: '015750', market: 'KOSDAQ', price: 8500, change: 50, rate: 0.59, industry: '자동차' },
+                        { rank: 58, name: '서진시스템', code: '178320', market: 'KOSDAQ', price: 26000, change: 500, rate: 1.96, industry: '통신장비' },
+                        { rank: 59, name: '인텔리안테크', code: '189300', market: 'KOSDAQ', price: 58000, change: 1000, rate: 1.75, industry: '통신장비' },
+                        { rank: 60, name: '제일엠앤에스', code: '456789', market: 'KOSDAQ', price: 18000, change: 200, rate: 1.12, industry: '2차전지' }
+                    ]
+                };
+            }
+
+            async fetchGlobalData() {
+                return new Promise(resolve => setTimeout(() => resolve(this.db.global), 600));
+            }
+
+            async fetchStocks(marketFilter = 'ALL') {
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        const data = this.db.stocks.filter(s => 
+                            marketFilter === 'ALL' ? true : s.market === marketFilter
+                        );
+                        resolve(data);
+                    }, 400); 
+                });
+            }
+        }
+
+        class DashboardApp {
+            constructor() {
+                this.api = new StockApiService();
+                this.state = {
+                    currentMarket: 'KOSDAQ',
+                    activeCode: null,
+                    stocks: []
+                };
+                
+                this.ui = {
+                    globalStats: document.getElementById('global-stats'),
+                    industryGrid: document.getElementById('industry-grid'),
+                    loading: document.getElementById('loading-overlay'),
+                    detail: {
+                        badge: document.getElementById('detail-badge'),
+                        industry: document.getElementById('detail-industry'),
+                        name: document.getElementById('detail-name'),
+                        code: document.getElementById('detail-code'),
+                        price: document.getElementById('detail-price'),
+                        change: document.getElementById('detail-change'),
+                        rate: document.getElementById('detail-rate'),
+                        simLow: document.getElementById('sim-low'),
+                        simHigh: document.getElementById('sim-high'),
+                        dot: document.getElementById('price-dot'),
+                        news: document.getElementById('news-list'),
+                        links: {
+                            naver: document.getElementById('naver-link'),
+                            dart: document.getElementById('dart-link')
+                        }
+                    }
+                };
+            }
+
+            async init() {
+                try {
+                    console.log("App Initializing...");
+                    this.updateTime();
+                    this.updateFilterButtons();
+                    await this.refreshData();
+                    setInterval(() => this.updateTime(), 60000);
+                    
+                    // [Diagnostic] Remove overlay if initialization is successful
+                    // const overlay = document.getElementById('diagnostic-overlay');
+                    // if (overlay) {
+                    //     overlay.style.display = 'none'; // Hide overlay on success
+                    // }
+                    console.log("App Initialized Successfully.");
+                } catch (err) {
+                    console.error("Init failed:", err);
+                    document.getElementById('error-banner').style.display = 'block';
+                    document.getElementById('error-banner').textContent = `초기화 실패: ${err.message || '알 수 없는 오류'}`;
+                    // document.getElementById('js-status').textContent = '초기화 실패 (콘솔 확인)';
+                    throw err; // Trigger global handler
+                }
+            }
+
+            updateTime() {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                document.getElementById('last-updated').textContent = `Updated ${timeStr}`;
+            }
+
+            async refreshData() {
+                this.ui.loading.classList.remove('hidden');
+                
+                try {
+                    const [globalData, stockData] = await Promise.all([
+                        this.api.fetchGlobalData(),
+                        this.api.fetchStocks(this.state.currentMarket)
+                    ]);
+                    
+                    this.renderGlobalStats(globalData);
+                    this.state.stocks = stockData;
+                    this.renderStockGrid();
+                    
+                    if (stockData.length > 0) {
+                        const target = this.state.stocks.find(s => s.code === this.state.activeCode) 
+                            || stockData[0];
+                        this.selectStock(target.code);
+                    }
+                } finally {
+                    this.ui.loading.classList.add('hidden');
+                    this.updateTime();
+                }
+            }
+
+            setFilter(market) {
+                this.state.currentMarket = market;
+                this.state.activeCode = null;
+                this.updateFilterButtons();
+                this.refreshData();
+            }
+
+            updateFilterButtons() {
+                ['all', 'kospi', 'kosdaq'].forEach(m => {
+                    const btn = document.getElementById(`filter-${m}`);
+                    const isActive = m === this.state.currentMarket.toLowerCase();
+                    btn.className = isActive 
+                        ? 'px-3 py-1.5 text-xs font-bold rounded-md transition-all bg-indigo-600 text-white shadow-sm'
+                        : 'px-3 py-1.5 text-xs font-bold rounded-md transition-all text-slate-500 hover:bg-slate-200';
+                });
+            }
+
+            renderGlobalStats(data) {
+                this.ui.globalStats.innerHTML = data.map(item => {
+                    const isUp = item.change > 0;
+                    const colorClass = isUp ? 'text-up' : 'text-down';
+                    const sign = isUp ? '▲' : '▼';
+                    
+                    return `
+                        <div class="global-card">
+                            <div class="text-[10px] font-bold text-slate-500 mb-0.5 truncate uppercase tracking-wider">${item.name}</div>
+                            <div class="flex items-end justify-between">
+                                <span class="text-sm font-black text-slate-800 num-font">${item.value.toLocaleString()}</span>
+                                <div class="flex flex-col items-end leading-none">
+                                    <span class="text-[10px] font-bold ${colorClass}">${sign} ${Math.abs(item.change).toLocaleString()}</span>
+                                    <span class="text-[10px] font-bold ${colorClass} opacity-80 mt-0.5">${Math.abs(item.rate)}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            renderStockGrid() {
+                const grouped = this.state.stocks.reduce((acc, stock) => {
+                    const k = stock.industry;
+                    if (!acc[k]) acc[k] = [];
+                    acc[k].push(stock);
+                    return acc;
+                }, {});
+
+                this.ui.industryGrid.innerHTML = Object.keys(grouped).map(industry => {
+                    const stocks = grouped[industry];
+                    const itemsHtml = stocks.map(stock => {
+                        const isUp = stock.rate > 0;
+                        const bgClass = isUp ? 'bg-up' : 'bg-down';
+                        const textClass = isUp ? 'text-up' : 'text-down';
+                        const isActive = this.state.activeCode === stock.code ? 'active' : '';
+                        const badgeClass = stock.market === 'KOSPI' ? 'rank-kospi' : 'rank-kosdaq';
+                        
+                        return `
+                            <div class="stock-item ${bgClass} ${isActive}" onclick="app.selectStock('${stock.code}')">
+                                <div class="flex justify-between items-start">
+                                    <span class="rank-badge ${badgeClass}">${stock.rank}</span>
+                                    <span class="text-[10px] font-bold ${textClass} bg-white/60 px-1 py-0.5 rounded">${stock.rate > 0 ? '+' : ''}${stock.rate}%</span>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="font-bold text-slate-800 text-xs truncate leading-tight">${stock.name}</div>
+                                    <div class="font-extrabold text-slate-900 num-font mt-0.5 text-xs">${stock.price.toLocaleString()}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    return `
+                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div class="bg-slate-50 px-3 py-2 border-b border-slate-100 flex justify-between items-center">
+                                <h3 class="text-xs font-bold text-slate-700">${industry}</h3>
+                                <span class="text-[9px] font-semibold text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">${stocks.length}</span>
+                            </div>
+                            <div class="p-2 grid grid-cols-2 gap-2">
+                                ${itemsHtml}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            selectStock(code) {
+                this.state.activeCode = code;
+                const stock = this.state.stocks.find(s => s.code === code);
+                this.renderStockGrid(); 
+                this.renderDetail(stock);
+            }
+
+            renderDetail(stock) {
+                if (!stock) return;
+
+                const d = this.ui.detail;
+                const isUp = stock.rate > 0;
+                const colorClass = isUp ? 'text-up' : 'text-down';
+                const bgClass = isUp ? 'bg-up' : 'bg-down';
+
+                d.badge.textContent = stock.market;
+                d.badge.className = `px-2 py-0.5 text-[10px] font-bold rounded ${stock.market === 'KOSPI' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`;
+                
+                d.industry.textContent = stock.industry;
+                d.name.textContent = stock.name;
+                d.code.textContent = stock.code;
+                
+                d.price.textContent = stock.price.toLocaleString();
+                d.price.className = `text-3xl font-black num-font ${colorClass}`;
+                
+                d.change.textContent = `${stock.change > 0 ? '▲' : '▼'} ${Math.abs(stock.change).toLocaleString()}`;
+                d.change.className = `text-md font-bold num-font ${colorClass}`;
+                
+                d.rate.textContent = `${stock.rate > 0 ? '+' : ''}${stock.rate}%`;
+                d.rate.className = `px-2 py-0.5 rounded text-[10px] font-bold num-font ${bgClass} ${colorClass}`;
+
+                const low = Math.round(stock.price * 0.98);
+                const high = Math.round(stock.price * 1.02);
+                d.simLow.textContent = low.toLocaleString();
+                d.simHigh.textContent = high.toLocaleString();
+                
+                const randomPercent = 30 + Math.random() * 40; 
+                d.dot.style.left = `${randomPercent}%`;
+
+                const newsItems = [
+                    `${stock.name}, 4분기 실적 기대감에 상승세`,
+                    `외국인/기관 동반 매수... ${stock.name} 주목`,
+                    `${stock.industry} 업황 개선 신호탄?`,
+                    `증권가 "${stock.name} 목표주가 상향 조정"`
+                ];
+                
+                d.news.innerHTML = newsItems.map(title => `
+                    <a href="#" class="block p-2 rounded hover:bg-slate-50 transition border border-transparent hover:border-slate-100 group">
+                        <div class="text-xs font-semibold text-slate-700 truncate group-hover:text-indigo-600">${title}</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5 flex justify-between">
+                            <span>한국경제</span>
+                            <span>10분 전</span>
+                        </div>
+                    </a>
+                `).join('');
+
+                d.links.naver.href = `https://finance.naver.com/item/main.naver?code=${stock.code}`;
+                d.links.dart.href = `https://dart.fss.or.kr/dsac001/main.do?&textCrpNm=${encodeURIComponent(stock.name)}`;
+            }
+        }
+
+        const app = new DashboardApp();
+        document.addEventListener('DOMContentLoaded', () => app.init());
+
+    </script>
+</body>
+</html>

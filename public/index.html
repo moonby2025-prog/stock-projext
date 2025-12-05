@@ -283,7 +283,7 @@
 
     <script>
         /**
-         * [API 엔진] 실시간 가격 시뮬레이션 및 데이터 관리 (Git 강제 인식용 주석 추가 - Final Rework 2025.12.06)
+         * [API 엔진] 실시간 가격 시뮬레이션 및 데이터 관리 (Git 강제 인식용 주석 추가 - Final Rework 2025.12.06_Git_Fix)
          * 이 부분은 Vercel 배포 전까지 시뮬레이션 데이터를 반환하도록 설정되어 있었습니다.
          * 이제 Vercel 서버리스 API를 호출하도록 코드가 수정되었습니다.
          */
@@ -535,9 +535,184 @@
                 }
             }
 
+            updateTime() {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                document.getElementById('last-updated').textContent = `Updated ${timeStr} (Git Fix)`; // Git 인식 강제
+            }
             // ... (나머지 클래스 코드는 그대로 유지)
             
             // updateDetailPanel 함수는 그대로 유지
+            updateDetailPanel(stock) {
+                const elPrice = document.getElementById('detail-price');
+                const elChange = document.getElementById('detail-change');
+                const oldPrice = parseInt(elPrice.textContent.replace(/,/g, '')) || 0;
+                
+                // API에서 price, rate, change 필드를 사용합니다.
+                const isUp = stock.rate > 0;
+                const color = isUp ? 'text-up' : 'text-down';
+                
+                // 가격 변동 시 배경색 깜빡임 효과
+                if(stock.price !== oldPrice) {
+                    const box = document.getElementById('price-container');
+                    // 이전 애니메이션 클래스 제거 후 재적용
+                    box.classList.remove('flash-up', 'flash-down');
+                    void box.offsetWidth; // trigger reflow
+                    box.classList.add(stock.price > oldPrice ? 'flash-up' : 'flash-down');
+                }
+
+                elPrice.className = `text-3xl font-black num-font ${color}`;
+                elPrice.textContent = stock.price.toLocaleString();
+                
+                elChange.className = `text-md font-bold num-font ${color}`;
+                elChange.textContent = `${stock.change > 0 ? '▲' : '▼'} ${Math.abs(stock.change).toLocaleString()}`;
+                
+                const elRate = document.getElementById('detail-rate');
+                elRate.className = `px-2 py-0.5 rounded text-[10px] font-bold num-font ${isUp ? 'bg-up' : 'bg-down'}`;
+                elRate.textContent = `${stock.rate}%`;
+
+                const low = stock.price * 0.98;
+                const high = stock.price * 1.02;
+                const percent = Math.max(0, Math.min(100, ((stock.price - low) / (high - low)) * 100));
+                document.getElementById('sim-low').textContent = Math.floor(low).toLocaleString();
+                document.getElementById('sim-high').textContent = Math.floor(high).toLocaleString();
+                document.getElementById('price-dot').style.left = `${percent}%`;
+            }
+            
+            //... (나머지 클래스 코드는 그대로 유지)
+        }
+
+        class DashboardApp {
+            constructor() {
+                this.api = new StockApiService();
+                this.state = {
+                    currentMarket: 'KOSDAQ',
+                    activeCode: null,
+                    chartPeriod: 'DAY',
+                    stocks: []
+                };
+                this.updateTimer = null;
+            }
+
+            async init() {
+                this.updateTime();
+                setInterval(() => this.updateTime(), 60000);
+                
+                await this.refreshData();
+                this.startLiveUpdate(); // 라이브 모드 시작
+            }
+
+            updateTime() {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                // Git 인식을 강제하기 위한 수정: 시간 표시 옆에 (Git Fix) 추가
+                document.getElementById('last-updated').textContent = `Updated ${timeStr} (Git Fix)`; 
+            }
+
+            async refreshData() {
+                document.getElementById('loading-overlay').classList.remove('hidden');
+                const [global, stocks] = await Promise.all([
+                    this.api.fetchGlobalData(),
+                    this.api.fetchStocks(this.state.currentMarket)
+                ]);
+                
+                this.renderGlobal(global);
+                this.state.stocks = stocks;
+                this.renderGrid(); // 그룹화된 그리드 렌더링 호출
+                
+                if(!this.state.activeCode && stocks.length > 0) {
+                    this.selectStock(stocks[0].code);
+                }
+                document.getElementById('loading-overlay').classList.add('hidden');
+            }
+
+            // [수정됨] 실시간 가격 업데이트 루프: 뉴스 및 보고서 렌더링 추가
+            startLiveUpdate() {
+                if(this.updateTimer) clearInterval(this.updateTimer);
+                this.updateTimer = setInterval(async () => {
+                    if(this.state.activeCode) {
+                        const realData = await this.api.fetchRealtimePrice(this.state.activeCode);
+                        
+                        // API 호출이 실패하고 시뮬레이션 데이터(가격만 있는)가 반환된 경우 처리
+                        if (realData.price === undefined) {
+                            // 시뮬레이션 데이터로 가격만 업데이트
+                            this.updateDetailPanel(realData); 
+                            this.updateGridItem(realData);
+                            // 뉴스/보고서는 업데이트하지 않음 (이전 데이터를 유지하거나 초기 상태 유지)
+                            return; 
+                        }
+
+                        // API 성공 시: 가격 업데이트
+                        this.updateDetailPanel(realData); 
+                        this.updateGridItem(realData);
+                        
+                        // API 성공 시: 뉴스, 보고서, 공시 업데이트 (Naver API 연동)
+                        this.renderDisclosure(realData.disclosure || []);
+                        this.renderNews(realData.news || []);
+                        this.renderReports(realData.reports || []);
+
+                    }
+                }, 2000); // 2초 주기
+            }
+
+            updateGridItem(stock) {
+                // 화면에 보이는 해당 종목 카드만 콕 집어서 업데이트 (성능 최적화)
+                const card = document.querySelector(`.stock-item[onclick="app.selectStock('${stock.code}')"]`);
+                if(card) {
+                    const priceEl = card.querySelector('.stock-price');
+                    const rateEl = card.querySelector('.stock-rate');
+                    if(priceEl) priceEl.textContent = stock.price.toLocaleString();
+                    if(rateEl) {
+                        const isUp = stock.rate > 0;
+                        rateEl.textContent = `${stock.rate}%`;
+                        rateEl.className = `stock-rate text-sm font-bold ${isUp ? 'text-up' : 'text-down'}`;
+                    }
+                }
+            }
+
+            setFilter(market) {
+                this.state.currentMarket = market;
+                this.updateFilterUI();
+                this.refreshData();
+            }
+
+            updateFilterUI() {
+                ['all', 'kospi', 'kosdaq'].forEach(m => {
+                    const btn = document.getElementById(`filter-${m}`);
+                    const active = m === this.state.currentMarket.toLowerCase();
+                    btn.className = `px-3 py-1.5 text-xs font-bold rounded-md transition-all ${active ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-200'}`;
+                });
+            }
+
+            // [수정됨] 종목 선택 시 리스트 초기화 로직 추가
+            selectStock(code) {
+                this.state.activeCode = code;
+                const stock = this.state.stocks.find(s => s.code === code);
+                
+                // 기존 active 클래스 제거 및 추가
+                document.querySelectorAll('.stock-item').forEach(el => el.classList.remove('active'));
+                const card = document.querySelector(`.stock-item[onclick="app.selectStock('${code}')"]`);
+                if(card) card.classList.add('active');
+                
+                if(stock) {
+                    document.getElementById('detail-name').textContent = stock.name;
+                    document.getElementById('detail-code').textContent = stock.code;
+                    document.getElementById('detail-industry').textContent = stock.industry;
+                    document.getElementById('detail-badge').textContent = stock.market;
+                    
+                    this.updateDetailPanel(stock);
+                    this.renderChartPlaceholder(stock);
+                    
+                    document.getElementById('dart-link').href = `https://dart.fss.or.kr/dsac001/main.do?&textCrpNm=${encodeURIComponent(stock.name)}`;
+                    document.getElementById('naver-talk-link').href = `https://finance.naver.com/item/board.naver?code=${stock.code}`;
+                    
+                    // 종목 변경 시 뉴스/보고서 목록을 로딩 상태로 초기화
+                    this.renderDisclosure(null);
+                    this.renderNews(null);
+                    this.renderReports(null);
+                }
+            }
+
             updateDetailPanel(stock) {
                 const elPrice = document.getElementById('detail-price');
                 const elChange = document.getElementById('detail-change');

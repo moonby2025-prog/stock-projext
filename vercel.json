@@ -1,3 +1,8 @@
 {
-  "comment": "Vercel Zero Config 사용을 위해 설정을 비워둡니다."
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/realtime.py"
+    }
+  ]
 }

@@ -1,5 +1,3 @@
 Flask
-yfinance
 requests
-
-Git 강제 인식용 주석 업데이트: 2025-12-06_Final_Clean
+yfinance

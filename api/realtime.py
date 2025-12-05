@@ -1,5 +1,6 @@
 # Vercel Serverless Function (Python/Flask)
 # Filename: api/realtime.py
+# -- Vercel 재배포 강제 인식용 수정: 2025.12.06 --
 
 import os
 import json

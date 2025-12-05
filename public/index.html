@@ -283,7 +283,7 @@
 
     <script>
         /**
-         * [API 엔진] 실시간 가격 시뮬레이션 및 데이터 관리 (Git 강제 인식용 주석 추가)
+         * [API 엔진] 실시간 가격 시뮬레이션 및 데이터 관리 (Git 강제 인식용 주석 추가 - Final Rework 2025.12.06)
          * 이 부분은 Vercel 배포 전까지 시뮬레이션 데이터를 반환하도록 설정되어 있었습니다.
          * 이제 Vercel 서버리스 API를 호출하도록 코드가 수정되었습니다.
          */
@@ -618,9 +618,7 @@
                     </div>
                 `).join('');
             }
-            
-            //... (renderGlobal, renderGrid, getIndustryIcon, renderChartPlaceholder, setChartPeriod 함수는 변경 없음)
-        
+
             renderGlobal(data) {
                 const container = document.getElementById('global-stats');
                 container.innerHTML = data.map(item => {

@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>코스피/코스닥 통합 대시보드 (진단 모드)</title>
+    <title>코스피/코스닥 통합 대시보드 (레이아웃 개선)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        /* Original App Styles */
+        /* Original App Styles - Modified for Better Readability */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
+            /* 배경색을 slate-100으로 변경하여 흰색 카드와의 대비를 강화합니다. */
+            background-color: #f1f5f9; /* Tailwind slate-100 */
             height: 100vh;
             overflow: hidden;
             display: flex;
@@ -23,41 +24,104 @@
         .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
         .stock-item {
             cursor: pointer;
-            padding: 0.5rem;
+            padding: 0.75rem; 
             transition: all 0.2s ease;
-            border-radius: 0.5rem;
-            border: 1px solid transparent;
+            border-radius: 0.75rem; 
+            border: 1px solid #e2e8f0; 
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            min-height: 5rem;
+            min-height: 4.5rem; 
+            background-color: white; /* 카드는 흰색 유지 */
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Light shadow */
         }
+        /* Hover and Active styles remain for interaction feedback */
         .stock-item:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 6px 10px -3px rgba(0, 0, 0, 0.1); /* Stronger shadow on hover */
             z-index: 10;
         }
         .stock-item.active {
-            ring: 2px solid #4f46e5;
+            ring: 3px solid #4f46e5; 
             ring-offset: 1px;
             z-index: 20;
             background-color: #ffffff;
             border-color: #4f46e5;
         }
-        .bg-up { background-color: #fff1f2; border-color: #fecdd3; }
-        .bg-down { background-color: #eff6ff; border-color: #bfdbfe; }
-        .text-up { color: #e11d48; }
-        .text-down { color: #2563eb; }
+        /* Rank Badge specific styles (New) */
+        .rank-badge-top {
+            font-size: 0.6rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 9999px;
+            font-weight: 800;
+            white-space: nowrap;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            /* 중앙 정렬을 위해 플렉스 적용 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1; /* 높이 조절 */
+            height: 1.5rem; /* 높이 고정 */
+        }
+        
+        /* NEW 10-rank Segmentation Badges */
+        .badge-red { background-color: #ef4444; color: white; } /* Top 3 */
+        .badge-top10 { background-color: #4f46e5; color: white; } /* Indigo 600 (4-10위) */
+        .badge-top20 { background-color: #f59e0b; color: #1f2937; } /* Amber 500 (11-20위) */
+        .badge-top30 { background-color: #14b8a6; color: white; } /* Teal 500 (21-30위) */
+        .badge-default { background-color: #e5e7eb; color: #4b5563; } /* Rank 31+ (Gray) */
+
+
+        /* Colors for text elements only */
+        .text-up { color: #dc2626; font-weight: 700; } /* 진한 빨간색 */
+        .text-down { color: #2563eb; font-weight: 700; } /* 진한 파란색 */
+
         .global-card {
             background-color: white;
             border: 1px solid #e2e8f0;
             border-radius: 0.75rem;
-            padding: 0.75rem;
+            padding: 0.75rem; 
             display: flex;
             flex-direction: column;
             justify-content: center;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            /* 그림자 강화 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
         }
+        
+        /* 메인 영역 배경 강화 */
+        .main-section-card {
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Chart Button Styles (New) */
+        .chart-button {
+            border: 1px solid #e2e8f0;
+            background-color: white;
+            color: #475569; /* slate-600 */
+        }
+        .chart-button.active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+            border-color: #4f46e5;
+            box-shadow: 0 2px 5px rgba(79, 70, 229, 0.3);
+        }
+
+        /* NEW: 섹터 아이콘 스타일 (애니메이션 효과) */
+        .sector-icon {
+            transform: scale(1);
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            /* 아이콘 크기가 커지므로 마진 조정 */
+            margin-right: 0.6rem !important; 
+        }
+        .sector-icon:hover {
+            transform: scale(1.1);
+        }
+
+        /* Existing rank badge classes for Global/Filter area remain */
         .rank-badge {
             font-size: 0.6rem;
             padding: 0.1rem 0.4rem;
@@ -94,23 +158,27 @@
     <div id="error-banner"></div>
 
     <!-- 1. Header & Controls -->
-    <header class="flex-none flex items-center justify-between bg-white px-4 py-3 rounded-xl shadow-sm border border-slate-200 mt-2">
+    <!-- 헤더는 배경색 유지 및 그림자 약간 강화 -->
+    <header class="flex-none flex items-center justify-between bg-white px-4 py-3 rounded-xl shadow-md border border-slate-200 mt-2">
         <div class="flex items-center space-x-4">
             <h1 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
                 <span>📈</span>
-                <span>Market Dashboard</span>
+                <span>Market Dashboard (Simulation)</span>
             </h1>
+            <!-- 날짜 포맷 변경을 위해 폰트 모노 클래스는 유지 -->
             <span id="last-updated" class="text-xs text-slate-400 border-l pl-3 hidden sm:inline font-mono">
                 Initialize...
             </span>
         </div>
         
         <div class="flex items-center gap-2">
+            <!-- Refresh Button for "Integration" Simulation -->
             <button onclick="app.refreshData()" class="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="데이터 새로고침">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
             </button>
+            <!-- Filter Buttons: Active state managed by JS -->
             <div class="inline-flex p-1 bg-slate-100 rounded-lg">
                 <button id="filter-all" onclick="app.setFilter('ALL')" class="px-3 py-1.5 text-xs font-bold rounded-md transition-all">ALL</button>
                 <button id="filter-kospi" onclick="app.setFilter('KOSPI')" class="px-3 py-1.5 text-xs font-bold rounded-md transition-all">KOSPI</button>
@@ -119,14 +187,16 @@
         </div>
     </header>
 
-    <!-- 2. Global Market Indicators -->
+    <!-- 2. Global Market Indicators (Snapshot Data) -->
     <section id="global-stats" class="flex-none grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <!-- JS Rendered -->
+        <!-- Rendered via JS -->
     </section>
     
     <!-- 3. Main Split View -->
     <main class="flex-1 min-h-0 flex flex-col lg:flex-row gap-4">
-        <section class="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-h-0 min-w-0">
+        
+        <!-- Left: Stock Map (main-section-card 클래스 추가) -->
+        <section class="flex-1 main-section-card flex flex-col min-h-0 min-w-0">
             <div class="flex-none px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
                 <h2 class="text-sm font-bold text-slate-700 flex items-center">
                     <span class="w-1.5 h-4 bg-indigo-600 rounded-full mr-2"></span>
@@ -137,14 +207,17 @@
             <div id="loading-overlay" class="hidden absolute inset-0 bg-white/80 z-50 flex items-center justify-center">
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
             </div>
-            <div class="flex-1 overflow-y-auto p-3 custom-scroll bg-slate-50/50">
+            <!-- NEW: 배경색을 bg-gray-50으로 변경 -->
+            <div class="flex-1 overflow-y-auto p-3 custom-scroll bg-gray-50">
                 <div id="industry-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                    <!-- Cards -->
+                    <!-- Industry Cards -->
                 </div>
             </div>
         </section>
 
-        <aside class="flex-none w-full lg:w-80 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-h-0">
+        <!-- Right: Detail Panel (main-section-card 클래스 추가) -->
+        <aside class="flex-none w-full lg:w-80 main-section-card flex flex-col min-h-0">
+            <!-- Detail Header -->
             <div class="flex-none p-5 border-b border-slate-50">
                 <div class="flex justify-between items-start mb-1">
                     <span id="detail-badge" class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded">MARKET</span>
@@ -155,6 +228,8 @@
                     <span id="detail-code" class="text-xs text-slate-400 num-font mb-1">------</span>
                 </div>
             </div>
+
+            <!-- Detail Content -->
             <div class="flex-1 overflow-y-auto p-5 custom-scroll">
                 <div class="mb-6">
                     <div class="flex items-baseline space-x-2">
@@ -166,6 +241,20 @@
                         <span id="detail-rate" class="px-2 py-0.5 rounded text-[10px] font-bold num-font">-</span>
                     </div>
                 </div>
+
+                <!-- NEW: Chart Controls (일, 주, 월 선택) -->
+                <div id="chart-controls" class="flex justify-start space-x-2 mb-4">
+                    <button onclick="app.setChartPeriod('DAY')" id="chart-day" class="chart-button text-xs px-3 py-1 rounded-full font-bold transition-colors">일</button>
+                    <button onclick="app.setChartPeriod('WEEK')" id="chart-week" class="chart-button text-xs px-3 py-1 rounded-full font-bold transition-colors">주</button>
+                    <button onclick="app.setChartPeriod('MONTH')" id="chart-month" class="chart-button text-xs px-3 py-1 rounded-full font-bold transition-colors">월</button>
+                </div>
+
+                <!-- NEW: Chart Placeholder -->
+                <div id="stock-chart-placeholder" class="mb-6 bg-slate-100 p-4 h-40 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 text-sm font-medium">
+                    차트 데이터를 불러오는 중...
+                </div>
+
+                <!-- Range Bar (일일 변동폭) -->
                 <div class="mb-6 bg-slate-50 p-3 rounded-lg border border-slate-100">
                     <div class="flex justify-between text-[10px] text-slate-400 mb-1 font-semibold">
                         <span>Day Low</span>
@@ -180,17 +269,59 @@
                         <span id="sim-high">-</span>
                     </div>
                 </div>
-                <div class="mb-4">
-                    <h4 class="text-xs font-bold text-slate-800 mb-3 flex items-center">
-                        <span class="w-1 h-3 bg-slate-800 mr-2 rounded-full"></span>
-                        관련 뉴스
+                
+                <!-- 중요 공시사항 섹션 -->
+                <div class="mb-6 global-card p-3">
+                    <h4 class="text-xs font-extrabold text-slate-700 mb-2 flex items-center">
+                        <!-- Red Bell Icon for Announcement/Disclosure (Mock) -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        당일 중요 공시사항
                     </h4>
-                    <div id="news-list" class="space-y-2"></div>
+                    <div id="daily-disclosure-list" class="space-y-1 text-xs">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+
+                <!-- Real-time News Section (New) -->
+                <div class="mb-6 global-card p-3">
+                    <h4 class="text-xs font-extrabold text-slate-700 mb-2 flex items-center">
+                        <!-- Red Newspaper Icon (Adjusted for visual appeal) -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v18"></path><path d="M12 2v20"></path><path d="M18 6h-8"></path><path d="M18 10h-8"></path><path d="M18 14h-8"></path><path d="M18 18h-8"></path><path d="M6 10h-2"></path><path d="M6 14h-2"></path><path d="M6 18h-2"></path></svg>
+                        실시간 뉴스 (최근 5개)
+                    </h4>
+                    <div id="realtime-news-list" class="space-y-1"></div>
+                </div>
+
+                <!-- Analyst Report Section (New) -->
+                <div class="mb-4 global-card p-3">
+                    <h4 class="text-xs font-extrabold text-slate-700 mb-2 flex items-center">
+                        <!-- Blue Chart Icon (Adjusted for visual appeal) -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20v-4"></path></svg>
+                        애널리스트 보고서 (최근 5개)
+                    </h4>
+                    <div id="analyst-report-list" class="space-y-1"></div>
                 </div>
             </div>
-            <div class="flex-none p-3 border-t border-slate-50 bg-slate-50/50 rounded-b-xl grid grid-cols-2 gap-2">
-                <a id="naver-link" href="#" target="_blank" class="flex justify-center items-center py-2.5 rounded-lg bg-[#03C75A] hover:bg-[#02b350] text-white font-bold text-xs transition shadow-sm shadow-green-100">네이버 증권</a>
-                <a id="dart-link" href="#" target="_blank" class="flex justify-center items-center py-2.5 rounded-lg bg-[#F3B648] hover:bg-[#e0a435] text-white font-bold text-xs transition shadow-sm shadow-yellow-100">DART 공시</a>
+
+            <!-- Footer Actions (Updated based on image) -->
+            <!-- 상세 패널 하단 영역은 배경색을 body와 동일하게 변경 -->
+            <div class="flex-none p-3 border-t border-slate-50 bg-slate-100 rounded-b-xl grid grid-cols-1 gap-3">
+                
+                <a id="dart-link" href="#" target="_blank" class="flex justify-center items-center py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition shadow-lg shadow-amber-200/50">
+                    <!-- Icon for Document/DART (File-Text) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                    전자공시 (DART)
+                    <!-- External Link Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                </a>
+                
+                <a id="naver-talk-link" href="#" target="_blank" class="flex justify-center items-center py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-lg shadow-indigo-200/50">
+                    <!-- Icon for Chat/Discussion (Message-Square) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    네이버 종목토론방
+                    <!-- External Link Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                </a>
             </div>
         </aside>
     </main>
@@ -207,22 +338,23 @@
 
         /**
          * [API Service Layer]
-         * Mock Data Service - Safe Mode
+         * Mock Data Service - Safe Mode with Random Change Simulation
          */
         class StockApiService {
             constructor() {
-                // 2025-12-04 Snapshot Data
-                this.db = {
+                // 2025-12-04 Base Snapshot Data (Initial State)
+                this.initialDB = {
                     global: [
-                        { name: 'KOSPI', value: 4023.74, change: -12.45, rate: -0.31 },
-                        { name: 'KOSDAQ', value: 932.01, change: 3.59, rate: 0.39 },
-                        { name: 'USD/KRW', value: 1472.09, change: 7.00, rate: 0.47 },
-                        { name: 'Samsung', value: 105100, change: 600, rate: 0.57 },
-                        { name: 'SK Hynix', value: 542000, change: -10000, rate: -1.81 },
-                        { name: 'NASDAQ(F)', value: 25647.50, change: -10.00, rate: -0.04 }
+                        { name: 'KOSPI', value: 4023.74, change: -12.45, rate: -0.31, unit: 'P' },
+                        { name: 'KOSDAQ', value: 932.01, change: 3.59, rate: 0.39, unit: 'P' },
+                        // 요청에 따라 항목 변경
+                        { name: 'NASDAQ 선물', value: 20547.50, change: -10.00, rate: -0.05, unit: 'P' },
+                        { name: 'USD/KRW', value: 1472.09, change: 7.00, rate: 0.47, unit: 'KRW' },
+                        { name: 'Bitcoin', value: 98540, change: 1200, rate: 1.23, unit: 'USD' },
+                        { name: 'Silver(XAG/USD)', value: 30.55, change: -0.25, rate: -0.81, unit: 'USD/oz' }
                     ],
                     stocks: [
-                        // --- KOSPI Top 60 ---
+                        // KOSPI Top 60
                         { rank: 1, name: '삼성전자', code: '005930', market: 'KOSPI', price: 105100, change: 600, rate: 0.57, industry: '반도체' },
                         { rank: 2, name: 'SK하이닉스', code: '000660', market: 'KOSPI', price: 542000, change: -10000, rate: -1.81, industry: '반도체' },
                         { rank: 3, name: 'LG에너지솔루션', code: '373220', market: 'KOSPI', price: 442000, change: 2000, rate: 0.45, industry: '2차전지' },
@@ -284,7 +416,7 @@
                         { rank: 59, name: '현대글로비스', code: '086280', market: 'KOSPI', price: 185000, change: 1000, rate: 0.54, industry: '물류' },
                         { rank: 60, name: 'F&F', code: '383220', market: 'KOSPI', price: 72000, change: -500, rate: -0.69, industry: '의류' },
 
-                        // --- KOSDAQ Top 60 ---
+                        // KOSDAQ Top 60
                         { rank: 1, name: '에코프로비엠', code: '247540', market: 'KOSDAQ', price: 265000, change: 5000, rate: 1.92, industry: '2차전지' },
                         { rank: 2, name: '알테오젠', code: '196170', market: 'KOSDAQ', price: 345000, change: 12000, rate: 3.60, industry: '바이오' },
                         { rank: 3, name: '에코프로', code: '086520', market: 'KOSDAQ', price: 94100, change: 1100, rate: 1.27, industry: '2차전지' },
@@ -347,16 +479,76 @@
                         { rank: 60, name: '제일엠앤에스', code: '456789', market: 'KOSDAQ', price: 18000, change: 200, rate: 1.12, industry: '2차전지' }
                     ]
                 };
+                
+                this.currentDB = JSON.parse(JSON.stringify(this.initialDB));
             }
 
+            // Helper to simulate price change
+            simulateChange(currentPrice) {
+                // Determine step size based on price magnitude (100won for low, 1000won for mid, 5000won for high)
+                let step;
+                if (currentPrice > 300000) step = 5000;
+                else if (currentPrice > 100000) step = 1000;
+                else if (currentPrice > 10000) step = 500;
+                else step = 50;
+
+                // Randomly change price (up to +/- 2 steps, min 1 step)
+                const direction = Math.random() > 0.5 ? 1 : -1;
+                const magnitude = Math.floor(Math.random() * 2) + 1; // 1 or 2
+                let changeAmount = step * magnitude * direction;
+
+                // Ensure price doesn't go below 1000
+                const newPrice = Math.max(1000, currentPrice + changeAmount);
+                changeAmount = newPrice - currentPrice;
+
+                const changeRate = (changeAmount / currentPrice) * 100;
+
+                return {
+                    newPrice: newPrice,
+                    change: changeAmount,
+                    rate: parseFloat(changeRate.toFixed(2))
+                };
+            }
+
+            // [Integration Point] Simulates fetching global data with random change
             async fetchGlobalData() {
-                return new Promise(resolve => setTimeout(() => resolve(this.db.global), 600));
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        this.currentDB.global = this.currentDB.global.map(item => {
+                            // Determine simulation step based on unit (e.g., small change for points, larger for crypto/forex)
+                            let newChange;
+                            if (item.unit === 'P' || item.unit === 'KRW') {
+                                newChange = (Math.random() * 10) * (Math.random() > 0.5 ? 1 : -1);
+                                if (item.name === 'USD/KRW') newChange = (Math.random() * 5) * (Math.random() > 0.5 ? 1 : -1);
+                            } else if (item.name === 'Bitcoin') {
+                                newChange = (Math.random() * 1500) * (Math.random() > 0.5 ? 1 : -1);
+                            } else if (item.name === 'Silver(XAG/USD)') {
+                                newChange = (Math.random() * 0.3) * (Math.random() > 0.5 ? 1 : -1);
+                            }
+
+                            item.change = parseFloat(newChange.toFixed(2));
+                            item.rate = parseFloat(((newChange / (item.value - item.change)) * 100).toFixed(2));
+                            item.value = parseFloat((item.value + newChange).toFixed(2));
+                            return item;
+                        });
+                        resolve(this.currentDB.global);
+                    }, 600); // 600ms Network delay sim
+                });
             }
 
+            // [Integration Point] Simulates fetching stocks with random change
             async fetchStocks(marketFilter = 'ALL') {
                 return new Promise(resolve => {
                     setTimeout(() => {
-                        const data = this.db.stocks.filter(s => 
+                        this.currentDB.stocks = this.currentDB.stocks.map(stock => {
+                            const simulation = this.simulateChange(stock.price);
+                            stock.price = simulation.newPrice;
+                            stock.change = simulation.change;
+                            stock.rate = simulation.rate;
+                            return stock;
+                        });
+
+                        const data = this.currentDB.stocks.filter(s => 
                             marketFilter === 'ALL' ? true : s.market === marketFilter
                         );
                         resolve(data);
@@ -365,18 +557,25 @@
             }
         }
 
+        /**
+         * [Main Controller]
+         * UI 업데이트 및 이벤트 핸들링
+         */
         class DashboardApp {
             constructor() {
                 this.api = new StockApiService();
                 this.state = {
-                    currentMarket: 'KOSDAQ',
+                    currentMarket: 'KOSDAQ', // Default to KOSDAQ as requested
                     activeCode: null,
+                    chartPeriod: 'DAY', // NEW: 기본 차트 기간 'DAY'로 설정
                     stocks: []
                 };
                 
+                // Elements
                 this.ui = {
                     globalStats: document.getElementById('global-stats'),
                     industryGrid: document.getElementById('industry-grid'),
+                    marketTitle: document.getElementById('market-title'),
                     loading: document.getElementById('loading-overlay'),
                     detail: {
                         badge: document.getElementById('detail-badge'),
@@ -389,10 +588,13 @@
                         simLow: document.getElementById('sim-low'),
                         simHigh: document.getElementById('sim-high'),
                         dot: document.getElementById('price-dot'),
-                        news: document.getElementById('news-list'),
+                        dailyDisclosureList: document.getElementById('daily-disclosure-list'),
+                        realtimeNewsList: document.getElementById('realtime-news-list'),
+                        analystReportList: document.getElementById('analyst-report-list'),
+                        chartPlaceholder: document.getElementById('stock-chart-placeholder'), // NEW
                         links: {
-                            naver: document.getElementById('naver-link'),
-                            dart: document.getElementById('dart-link')
+                            dart: document.getElementById('dart-link'),
+                            naverTalk: document.getElementById('naver-talk-link')
                         }
                     }
                 };
@@ -402,28 +604,35 @@
                 try {
                     console.log("App Initializing...");
                     this.updateTime();
+                    // Set initial active button state
                     this.updateFilterButtons();
                     await this.refreshData();
-                    setInterval(() => this.updateTime(), 60000);
-                    
-                    // [Diagnostic] Remove overlay if initialization is successful
-                    // const overlay = document.getElementById('diagnostic-overlay');
-                    // if (overlay) {
-                    //     overlay.style.display = 'none'; // Hide overlay on success
-                    // }
+                    setInterval(() => this.updateTime(), 60000); // Clock tick
                     console.log("App Initialized Successfully.");
                 } catch (err) {
                     console.error("Init failed:", err);
                     document.getElementById('error-banner').style.display = 'block';
                     document.getElementById('error-banner').textContent = `초기화 실패: ${err.message || '알 수 없는 오류'}`;
-                    // document.getElementById('js-status').textContent = '초기화 실패 (콘솔 확인)';
-                    throw err; // Trigger global handler
+                    throw err; // Re-throw to be caught by global handler
                 }
             }
 
+            /**
+             * 업데이트 시간을 'YYYY.MM.DD (요일) HH:mm' 형식으로 표시하도록 수정
+             */
             updateTime() {
                 const now = new Date();
-                const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                
+                const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+                const weekday = weekdays[now.getDay()];
+
+                const timeStr = `${year}.${month}.${day} (${weekday}) ${hours}:${minutes}`;
+                
                 document.getElementById('last-updated').textContent = `Updated ${timeStr}`;
             }
 
@@ -431,6 +640,7 @@
                 this.ui.loading.classList.remove('hidden');
                 
                 try {
+                    // Parallel Data Fetching
                     const [globalData, stockData] = await Promise.all([
                         this.api.fetchGlobalData(),
                         this.api.fetchStocks(this.state.currentMarket)
@@ -441,10 +651,14 @@
                     this.renderStockGrid();
                     
                     if (stockData.length > 0) {
+                        // If activeCode is not in the new list, select the first one
                         const target = this.state.stocks.find(s => s.code === this.state.activeCode) 
                             || stockData[0];
                         this.selectStock(target.code);
                     }
+                } catch (e) {
+                    console.error("Integration Error:", e);
+                    throw e; // Re-throw to be caught by global handler
                 } finally {
                     this.ui.loading.classList.add('hidden');
                     this.updateTime();
@@ -453,7 +667,7 @@
 
             setFilter(market) {
                 this.state.currentMarket = market;
-                this.state.activeCode = null;
+                this.state.activeCode = null; // Reset active selection when switching markets
                 this.updateFilterButtons();
                 this.refreshData();
             }
@@ -473,20 +687,164 @@
                     const isUp = item.change > 0;
                     const colorClass = isUp ? 'text-up' : 'text-down';
                     const sign = isUp ? '▲' : '▼';
+
+                    // 값 포맷팅: 소수점 처리
+                    let valueStr;
+                    if (item.name === 'Bitcoin') {
+                        valueStr = Math.round(item.value).toLocaleString(); // 비트코인은 정수로 표시
+                    } else if (item.name === 'Silver(XAG/USD)') {
+                        valueStr = item.value.toFixed(2); // 실버는 소수점 둘째 자리까지 표시
+                    } else {
+                        valueStr = item.value.toLocaleString(undefined, { minimumFractionDigits: item.value % 1 !== 0 ? 2 : 0, maximumFractionDigits: 2 });
+                    }
+
+                    // 변동 값 포맷팅
+                    let changeStr;
+                     if (item.name === 'Silver(XAG/USD)') {
+                         changeStr = Math.abs(item.change).toFixed(2);
+                     } else {
+                         changeStr = Math.abs(item.change).toLocaleString(undefined, { minimumFractionDigits: item.change % 1 !== 0 ? 2 : 0, maximumFractionDigits: 2 });
+                     }
                     
                     return `
                         <div class="global-card">
-                            <div class="text-[10px] font-bold text-slate-500 mb-0.5 truncate uppercase tracking-wider">${item.name}</div>
+                            <div class="text-[10px] font-bold text-slate-500 mb-0.5 truncate uppercase tracking-wider">${item.name} (${item.unit})</div>
                             <div class="flex items-end justify-between">
-                                <span class="text-sm font-black text-slate-800 num-font">${item.value.toLocaleString()}</span>
+                                <span class="text-sm font-black text-slate-800 num-font">${valueStr}</span>
                                 <div class="flex flex-col items-end leading-none">
-                                    <span class="text-[10px] font-bold ${colorClass}">${sign} ${Math.abs(item.change).toLocaleString()}</span>
+                                    <span class="text-[10px] font-bold ${colorClass}">${sign} ${changeStr}</span>
                                     <span class="text-[10px] font-bold ${colorClass} opacity-80 mt-0.5">${Math.abs(item.rate)}%</span>
                                 </div>
                             </div>
                         </div>
                     `;
                 }).join('');
+            }
+            
+            // New helper function to format market cap in '조원' (trillions of KRW)
+            formatMarketCap(price, rank) {
+                // Simplified Mock Cap Calculation: A large number scaled by rank and price.
+                // This formula is purely for simulation and visualization consistency.
+                const baseCap = price * (100 - rank) * 10000;
+                
+                // Convert to KRW Trillions (조원)
+                const trillion = 1000000000000;
+                const value = baseCap / trillion;
+                
+                // Keep one decimal point
+                return `${value.toFixed(1)}조원`;
+            }
+
+            // NEW: 산업별 아이콘 SVG를 반환하는 헬퍼 함수 (고유성 강화)
+            getIndustryIcon(industry) {
+                // 아이콘 크기를 h-6 w-6으로 키우고, sector-icon 클래스 추가
+                const h = "h-6 w-6 sector-icon"; 
+                const stroke = "stroke-2.5"; // 두꺼운 선
+
+                switch (industry) {
+                    case '반도체': 
+                    case 'IT부품': 
+                    case 'IT가전':
+                    case 'IT서비스':
+                        // Chip / Circuit board (Processor icon) - 반도체 고유 아이콘
+                        return `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-indigo-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h10"/><path d="M7 17h10"/><path d="M7 12h10"/><path d="M12 7v10"/>
+                            </svg>`;
+                    case '2차전지': 
+                        // Charging Battery - 에너지 저장
+                        return `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="10" width="18" height="12" rx="2"/><path d="M21 6H3"/><path d="M12 14v-4l-3 4h6"/>
+                            </svg>`;
+                    case '바이오': 
+                    case '제약': 
+                    case '의료AI':
+                    case '의료기기':
+                        // DNA Strand - 생명 과학/연구
+                        return `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-pink-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10 2a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2M14 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2M18 7.5L14 12l4 4.5M6 7.5L10 12l-4 4.5"/>
+                            </svg>`;
+                    case '자동차': 
+                        // Gauge (속도계) - 운송/이동 속도
+                        return `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 14s.5 2.5 2.5 2.5c2 0 4.5-2.5 4.5-2.5s-2.5-4.5-4.5-4.5c-2 0-2.5 2.5-2.5 2.5z"/><path d="M12 14l-4 4"/><circle cx="12" cy="12" r="10"/>
+                            </svg>`;
+                    case '금융': 
+                    case '보험':
+                        // Scale (천칭) - 금융의 균형/공정성
+                        return `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-green-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 3v18"/><path d="M18 13.5l-6-3-6 3"/><path d="M12 6.5L6 9.5m6-3l6 3"/><rect x="3" y="16" width="6" height="4" rx="1"/><rect x="15" y="16" width="6" height="4" rx="1"/>
+                            </svg>`;
+                    case '플랫폼': 
+                    case '게임': 
+                    case '미디어':
+                    case '엔터':
+                        // Gamepad2 (게임 패드) - 디지털 콘텐츠/엔터테인먼트
+                        return `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-orange-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6 12h4"/><path d="M8 10v4"/><path d="M15 11h2"/><path d="M16 10v4"/><rect x="2" y="4" width="20" height="16" rx="7"/>
+                            </svg>`;
+                    case '철강':
+                    case '정유/화학':
+                    case '화학':
+                        // Factory (공장) - 중후장대 산업
+                        return `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 20h20"/><path d="M6 20v-4"/><path d="M18 20v-4"/><path d="M12 20v-8"/><path d="M4 16v-2c0-1.1.9-2 2-2h12c1.1 0 2 .9 2 2v2"/><path d="M9 12h6"/><path d="M15 12V6c0-1.1-.9-2-2-2h-2c-1.1 0-2 .9-2 2v6"/>
+                            </svg>`;
+                    case '조선':
+                    case '해운':
+                    case '항공':
+                    case '물류':
+                        // Ship (배) - 해양 운송 및 조선
+                        return `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 20h16"/><path d="M8 12h8"/><path d="M6 16l-3-4h18l-3 4z"/><path d="M10 8l2-4 2 4"/>
+                            </svg>`;
+                    case '기계':
+                    case '방산':
+                        // Cog (톱니바퀴) - 제조 및 기계
+                        return `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-red-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.4 1.4 0 0 0-.8-2.6l-3.2-1.2v-3.2a1.4 1.4 0 0 0-2.6-.8l-1.2 3.2H7.6a1.4 1.4 0 0 0-.8 2.6l3.2 1.2v3.2a1.4 1.4 0 0 0 2.6.8l1.2-3.2h3.2a1.4 1.4 0 0 0 .8-2.6z"/>
+                            </svg>`;
+                    case '음식료':
+                    case '화장품':
+                    case '의류':
+                        // Shopping Cart (쇼핑 카트) - 소비재/유통
+                        return `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-lime-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.38a2 2 0 0 0 2-1.58L23 6H6"/>
+                            </svg>`;
+                    case '유틸리티':
+                        // Zap (번개) - 에너지/전력
+                        return `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-yellow-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                            </svg>`;
+                    case '지주사':
+                        // Building (건물/본사) - 지배 구조
+                        return `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="10" width="18" height="12" rx="2"/><line x1="12" y1="2" x2="12" y2="10"/><line x1="7" y1="14" x2="7" y2="18"/><line x1="17" y1="14" x2="17" y2="18"/>
+                            </svg>`;
+                    case '레저':
+                        // Star (별) - 엔터테인먼트/인기
+                        return `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-cyan-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                            </svg>`;
+                    default:
+                        // Default fallback
+                        return `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+                            </svg>`;
+                }
             }
 
             renderStockGrid() {
@@ -499,34 +857,85 @@
 
                 this.ui.industryGrid.innerHTML = Object.keys(grouped).map(industry => {
                     const stocks = grouped[industry];
+                    // Assume all stocks in a group are from the same market for simplicity, take the market of the first stock
+                    const market = stocks[0].market; 
+
+                    // 아이콘을 헬퍼 함수를 통해 가져옴
+                    const industryHeaderIcon = this.getIndustryIcon(industry);
+
                     const itemsHtml = stocks.map(stock => {
                         const isUp = stock.rate > 0;
-                        const bgClass = isUp ? 'bg-up' : 'bg-down';
-                        const textClass = isUp ? 'text-up' : 'text-down';
+                        const colorClass = isUp ? 'text-up' : 'text-down';
+                        const sign = isUp ? '▲' : '▼';
                         const isActive = this.state.activeCode === stock.code ? 'active' : '';
-                        const badgeClass = stock.market === 'KOSPI' ? 'rank-kospi' : 'rank-kosdaq';
+
+                        // Calculate Market Cap (Mock)
+                        const marketCapStr = this.formatMarketCap(stock.price, stock.rank);
+
+                        // --- UPDATED BADGE LOGIC START ---
+                        let badgeContent = `Rank ${stock.rank}`;
+                        let badgeClass = 'badge-default'; // Gray for Rank
                         
+                        if (stock.rank <= 3) {
+                            badgeContent = `🔥 Top 3`;
+                            badgeClass = 'badge-red';
+                        } else if (stock.rank <= 10) {
+                            badgeContent = `🚀 Top 10`;
+                            badgeClass = 'badge-top10';
+                        } else if (stock.rank <= 20) {
+                            badgeContent = `🌟 Top 20`;
+                            badgeClass = 'badge-top20';
+                        } else if (stock.rank <= 30) {
+                            badgeContent = `✨ Top 30`;
+                            badgeClass = 'badge-top30';
+                        } else {
+                            // Rank 31+
+                            badgeContent = `Rank ${stock.rank}`;
+                            badgeClass = 'badge-default';
+                        }
+                        // --- UPDATED BADGE LOGIC END ---
+
+
+                        const marketAbbr = stock.market === 'KOSPI' ? '(K)' : '(Q)'; // Use (K) for KOSPI, (Q) for KOSDAQ (to simulate visual difference)
+
+                        // New Card Structure matching the image
                         return `
-                            <div class="stock-item ${bgClass} ${isActive}" onclick="app.selectStock('${stock.code}')">
-                                <div class="flex justify-between items-start">
-                                    <span class="rank-badge ${badgeClass}">${stock.rank}</span>
-                                    <span class="text-[10px] font-bold ${textClass} bg-white/60 px-1 py-0.5 rounded">${stock.rate > 0 ? '+' : ''}${stock.rate}%</span>
-                                </div>
-                                <div class="mt-2">
-                                    <div class="font-bold text-slate-800 text-xs truncate leading-tight">${stock.name}</div>
-                                    <div class="font-extrabold text-slate-900 num-font mt-0.5 text-xs">${stock.price.toLocaleString()}</div>
+                            <div class="stock-item ${isActive}" onclick="app.selectStock('${stock.code}')">
+                                <div class="flex flex-col space-y-1">
+                                    
+                                    <!-- Top Row: Name and Badge -->
+                                    <div class="flex items-start justify-between">
+                                        <span class="text-sm font-bold text-slate-800 truncate leading-snug">${stock.name}${marketAbbr}</span>
+                                        <span class="rank-badge-top ${badgeClass} text-[10px] font-extrabold">${badgeContent}</span>
+                                    </div>
+                                    
+                                    <!-- Price and Market Cap -->
+                                    <div class="flex flex-col">
+                                        <span class="text-xl font-black num-font text-slate-900 leading-tight">${stock.price.toLocaleString()}원</span>
+                                        <span class="text-[10px] font-medium text-slate-500 whitespace-nowrap mt-0.5">시총: ${marketCapStr}</span>
+                                    </div>
+                                    
+                                    <!-- Change Rate -->
+                                    <div class="flex items-center">
+                                        <span class="text-sm font-bold ${colorClass} num-font">${sign} ${Math.abs(stock.rate)}%</span>
+                                    </div>
                                 </div>
                             </div>
                         `;
                     }).join('');
 
                     return `
-                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div class="bg-slate-50 px-3 py-2 border-b border-slate-100 flex justify-between items-center">
-                                <h3 class="text-xs font-bold text-slate-700">${industry}</h3>
-                                <span class="text-[9px] font-semibold text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">${stocks.length}</span>
+                        <div class="main-section-card overflow-hidden">
+                            <!-- Industry Card Header matching image style -->
+                            <div class="bg-white px-4 py-3 border-b border-slate-100 flex justify-between items-center rounded-t-xl">
+                                <h3 class="text-sm font-extrabold text-slate-800 flex items-center">
+                                    ${industryHeaderIcon}
+                                    <span>${industry} (${market})</span>
+                                    <span class="text-xs font-semibold text-slate-500 ml-2">(${stocks.length}개)</span>
+                                </h3>
                             </div>
-                            <div class="p-2 grid grid-cols-2 gap-2">
+                            <!-- Grid container background color changed to bg-gray-50 -->
+                            <div class="p-3 grid grid-cols-2 gap-3 bg-gray-50">
                                 ${itemsHtml}
                             </div>
                         </div>
@@ -536,9 +945,48 @@
 
             selectStock(code) {
                 this.state.activeCode = code;
+                this.state.chartPeriod = 'DAY'; // 종목 선택 시 기본 기간 '일'로 초기화
                 const stock = this.state.stocks.find(s => s.code === code);
+                
+                // Manually update active class to avoid full re-render flickering if possible, 
+                // but for simplicity and correctness in this mock, we re-render grid to update 'active' class on cards.
                 this.renderStockGrid(); 
                 this.renderDetail(stock);
+            }
+
+            // NEW: 차트 기간 설정 함수
+            setChartPeriod(period) {
+                this.state.chartPeriod = period;
+                const stock = this.state.stocks.find(s => s.code === this.state.activeCode);
+                if (stock) {
+                    this.renderChart(stock);
+                }
+            }
+
+            // NEW: 차트 영역 렌더링 함수 (플레이스홀더)
+            renderChart(stock) {
+                const periodMap = {
+                    'DAY': '일간 (Daily)',
+                    'WEEK': '주간 (Weekly)',
+                    'MONTH': '월간 (Monthly)'
+                };
+                
+                const periodName = periodMap[this.state.chartPeriod] || '기간 오류';
+                
+                // 버튼 상태 업데이트
+                document.querySelectorAll('#chart-controls .chart-button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.getElementById(`chart-${this.state.chartPeriod.toLowerCase()}`).classList.add('active');
+
+                // 차트 플레이스홀더 내용 업데이트
+                this.ui.detail.chartPlaceholder.innerHTML = `
+                    <p class="text-xs text-center text-slate-500">
+                        ${stock.name}의 <span class="text-indigo-600 font-bold">${periodName}</span> 차트 데이터가 여기에 표시됩니다.
+                        <br>
+                        (모의 데이터 시각화 영역)
+                    </p>
+                `;
             }
 
             renderDetail(stock) {
@@ -565,36 +1013,95 @@
                 d.rate.textContent = `${stock.rate > 0 ? '+' : ''}${stock.rate}%`;
                 d.rate.className = `px-2 py-0.5 rounded text-[10px] font-bold num-font ${bgClass} ${colorClass}`;
 
+                // Range Simulation - High/Low are recalculated based on current price for simulation
                 const low = Math.round(stock.price * 0.98);
                 const high = Math.round(stock.price * 1.02);
                 d.simLow.textContent = low.toLocaleString();
                 d.simHigh.textContent = high.toLocaleString();
                 
-                const randomPercent = 30 + Math.random() * 40; 
-                d.dot.style.left = `${randomPercent}%`;
-
-                const newsItems = [
-                    `${stock.name}, 4분기 실적 기대감에 상승세`,
-                    `외국인/기관 동반 매수... ${stock.name} 주목`,
-                    `${stock.industry} 업황 개선 신호탄?`,
-                    `증권가 "${stock.name} 목표주가 상향 조정"`
-                ];
+                // Randomize dot position for "Live" feel
+                const range = high - low;
+                const pricePosition = stock.price - low;
+                let dotPercent = (pricePosition / range) * 100;
                 
-                d.news.innerHTML = newsItems.map(title => `
-                    <a href="#" class="block p-2 rounded hover:bg-slate-50 transition border border-transparent hover:border-slate-100 group">
-                        <div class="text-xs font-semibold text-slate-700 truncate group-hover:text-indigo-600">${title}</div>
-                        <div class="text-[10px] text-slate-400 mt-0.5 flex justify-between">
-                            <span>한국경제</span>
-                            <span>10분 전</span>
-                        </div>
-                    </a>
-                `).join('');
+                // Clamp dot position between 0% and 100%
+                dotPercent = Math.max(0, Math.min(100, dotPercent));
+                
+                d.dot.style.left = `${dotPercent}%`;
 
-                d.links.naver.href = `https://finance.naver.com/item/main.naver?code=${stock.code}`;
+                // Chart Rendering (Initialize or Re-render chart UI)
+                this.renderChart(stock);
+
+                // --- Mock Disclosure, News, and Report Lists ---
+                
+                // 1. Mock Disclosure Data
+                const dailyDisclosures = [
+                    [`${stock.name} - 최대주주 변경 수반 주식 양수도 계약 체결`, '장중 공시', 'red'], 
+                    [`단일 판매/공급 계약 체결 (규모: 매출액 대비 15.5%)`, '13:30', 'blue'], 
+                    [`자기주식 취득 결정 (100억 규모)`, '09:00', 'green'], 
+                ];
+
+                const renderDisclosureItems = (list) => {
+                    if (list.length === 0) {
+                        return '<p class="text-xs text-slate-500 p-2 border border-dashed rounded text-center">오늘 등록된 중요 공시사항이 없습니다.</p>';
+                    }
+                    return list.map(([title, time, tagColor]) => {
+                        const tagClass = tagColor === 'red' ? 'bg-red-500' : tagColor === 'blue' ? 'bg-blue-500' : 'bg-green-500';
+                        return `
+                            <a href="#" class="block p-2 rounded hover:bg-slate-100 transition border border-transparent group">
+                                <div class="flex items-start justify-between">
+                                    <span class="text-xs font-medium text-slate-800 truncate pr-2 group-hover:text-red-600">${title}</span>
+                                    <span class="text-[10px] font-semibold text-white whitespace-nowrap px-1.5 py-0.5 rounded ${tagClass}">${time}</span>
+                                </div>
+                            </a>
+                        `;
+                    }).join('');
+                };
+
+                d.dailyDisclosureList.innerHTML = renderDisclosureItems(dailyDisclosures);
+
+
+                // 2. Mock News Data
+                const realtimeNews = [
+                    [`금일 오전 긴급 속보: ${stock.industry} 섹터...`, '10분 전'], 
+                    [`신규 사업 부문 진출 임박 소식`, '1시간 전'], 
+                    [`차세대 기술 개발 관련 투자 유치`, '어제'],
+                    [`경영진 변동, 시장 기대감 고조`, '2일 전'],
+                    [`해외 수주액 사상 최대 달성`, '3일 전']
+                ];
+
+                // 3. Mock Analyst Report Data
+                const analystReports = [
+                    [`매수 유지 (BUY) - 목표주가 상향`, '메리츠'],
+                    [`리스크 해소, 매수 기회 포착`, '하나'],
+                    [`단기 조정 가능성, 보유 의견 유지`, '삼성'],
+                    [`CAPEX 증가, 성장 가속 전망`, '키움'],
+                    [`매도 의견 (SELL) - 보수적 접근`, 'KB']
+                ];
+
+                // Helper for rendering news/report list items
+                const renderListItems = (list) => list.map(([title, sourceOrTime]) => {
+                    return `
+                        <a href="#" class="block p-2 rounded hover:bg-slate-100 transition border border-transparent group">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-medium text-slate-800 truncate pr-2 group-hover:text-indigo-600">${title}</span>
+                                <span class="text-[10px] font-semibold text-slate-400 whitespace-nowrap">${sourceOrTime}</span>
+                            </div>
+                            <div class="text-[10px] text-slate-400 mt-0.5 truncate">${stock.name} (${stock.code})</div>
+                        </a>
+                    `;
+                }).join('');
+
+                d.realtimeNewsList.innerHTML = renderListItems(realtimeNews);
+                d.analystReportList.innerHTML = renderListItems(analystReports);
+
+                // Link Updates 
                 d.links.dart.href = `https://dart.fss.or.kr/dsac001/main.do?&textCrpNm=${encodeURIComponent(stock.name)}`;
+                d.links.naverTalk.href = `https://finance.naver.com/item/board.naver?code=${stock.code}`; // Link to discussion board
             }
         }
 
+        // Initialize App
         const app = new DashboardApp();
         document.addEventListener('DOMContentLoaded', () => app.init());
 

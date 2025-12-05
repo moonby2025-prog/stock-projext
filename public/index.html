@@ -239,7 +239,7 @@
                     <div class="flex justify-between text-[10px] num-font text-slate-400 mt-2">
                         <span id="sim-low">-</span>
                         <span id="sim-high">-</span>
-                    </div>
+                    </>
                 </div>
                 
                 <div class="mb-6 global-card p-3">
@@ -476,8 +476,8 @@
             // [수정됨] 이제 서버에서 받은 모든 데이터(가격, 뉴스, 보고서)를 반환합니다.
             async fetchRealtimePrice(code) {
                 // Vercel 서버리스 함수 엔드포인트: /api/realtime?code=...
-                // 현재 페이지의 원본(origin)을 사용하여 명확한 절대 경로를 구성합니다.
-                const PROXY_URL = `${window.location.origin}/api/realtime?code=${code}`;
+                // **경로 오류 방지를 위해 절대 경로 대신 상대 경로로 수정**
+                const PROXY_URL = `/api/realtime?code=${code}`;
                 
                 // --- 실제 API 호출 스위치 ON ---
                 try {
@@ -848,7 +848,7 @@
                 if(industry === '플랫폼' || industry === '게임' || industry === '미디어' || industry === '엔터') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-orange-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12h4"/><path d="M8 10v4"/><path d="M15 11h2"/><path d="M16 10v4"/><rect x="2" y="4" width="20" height="16" rx="7"/></svg>`;
                 if(industry === '철강' || industry.includes('화학') || industry.includes('정유')) return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M6 20v-4"/><path d="M18 20v-4"/><path d="M12 20v-8"/><path d="M4 16v-2c0-1.1.9-2 2-2h12c1.1 0 2 .9 2 2v2"/><path d="M9 12h6"/><path d="M15 12V6c0-1.1-.9-2-2-2h-2c-1.1 0-2 .9-2 2v6"/></svg>`;
                 if(industry === '조선' || industry === '해운' || industry === '항공' || industry === '물류') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M8 12h8"/><path d="M6 16l-3-4h18l-3 4z"/><path d="M10 8l2-4 2 4"/></svg>`;
-                if(industry === '기계' || industry === '방산') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-red-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.4 1.4 0 0 0-.8-2.6l-3.2-1.2v-3.2a1.4 1.4 0 0 0-2.6-.8l-1.2 3.2H7.6a1.4 1.4 0 0 0-.8 2.6l3.2 1.2v3.2a1.4 1.4 0 0 0 2.6.8l1.2-3.2h3.2a1.4 1.4 0 0 0 .8-2.6z"/></svg>`;
+                if(industry === '기계' || industry === '방산') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-red-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.4 1.4 0 0 0-.8-2.6l-3.2-1.2v-3.2a1.4 1.4 0 0 0-2.6-.8l-1.2 3.2H7.6a1.4 1.4 0 0 0-.8 2.6l3.2 1.2v3.2a1.4 1.4 0 0 0 2.6.8l1.2-3.2h3.2a1.4 1.4 0 0 0 .8-2.6z"/></svg>`;
                 if(industry === '음식료' || industry === '화장품' || industry === '의류') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-lime-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.38a2 2 0 0 0 2-1.58L23 6H6"/></svg>`;
                 if(industry === '유틸리티') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-yellow-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
                 if(industry === '지주사') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="12" rx="2"/><line x1="12" y1="2" x2="12" y2="10"/><line x1="7" y1="14" x2="7" y2="18"/><line x1="17" y1="14" x2="17" y2="18"/></svg>`;

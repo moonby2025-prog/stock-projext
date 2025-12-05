@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>코스피/코스닥 통합 대시보드 (기존 레이아웃 + 라이브)</title>
+    <title>코스피/코스닥 통합 대시보드 (최종 버전)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -284,7 +284,8 @@
     <script>
         /**
          * [API 엔진] 실시간 가격 시뮬레이션 및 데이터 관리
-         * 이 부분은 Vercel 배포 전까지 시뮬레이션 데이터를 반환하도록 설정되어 있습니다.
+         * 이 부분은 Vercel 배포 전까지 시뮬레이션 데이터를 반환하도록 설정되어 있었습니다.
+         * 이제 Vercel 서버리스 API를 호출하도록 코드가 수정되었습니다.
          */
         class StockApiService {
             constructor() {
@@ -472,45 +473,53 @@
                 });
             }
 
-            // [서버 API 대체] 실시간 가격 (야후 파이낸스 대체)
+            // [수정됨] 이제 서버에서 받은 모든 데이터(가격, 뉴스, 보고서)를 반환합니다.
             async fetchRealtimePrice(code) {
                 // Vercel 서버리스 함수 엔드포인트: /api/realtime?code=...
-                const PROXY_URL = `/api/realtime?code=${code}`;
+                // 현재 페이지의 원본(origin)을 사용하여 명확한 절대 경로를 구성합니다.
+                const PROXY_URL = `${window.location.origin}/api/realtime?code=${code}`;
                 
-                // --- 실제 API 호출 시 주석 해제할 부분 (Vercel 배포 완료 후) ---
-                /*
+                // --- 실제 API 호출 스위치 ON ---
                 try {
                     const res = await fetch(PROXY_URL);
-                    if (!res.ok) throw new Error('API 서버 오류');
+                    if (!res.ok) {
+                        // API 서버 오류 시 콘솔에 로그만 남기고 시뮬레이션으로 대체
+                        console.error('API Server Error or not deployed:', res.status);
+                        throw new Error('API server failed');
+                    }
                     const realData = await res.json();
                     
-                    // KOSDAQ 종목 심볼을 기준으로 야후 데이터를 가져온다고 가정
-                    const stock = this.currentDB.stocks.find(s => s.code === code);
-                    stock.price = realData.price;
-                    stock.change = realData.change;
-                    stock.rate = realData.rate;
-                    return stock;
+                    // 로컬 DB 업데이트 (그리드에 가격 반영용)
+                    const localStock = this.currentDB.stocks.find(s => s.code === code);
+                    
+                    if (localStock && realData.price && realData.change !== undefined && realData.rate !== undefined) {
+                        localStock.price = realData.price;
+                        localStock.change = realData.change;
+                        localStock.rate = realData.rate;
+                    } 
+                    
+                    // API에서 가져온 전체 데이터를 반환 (가격, 뉴스, 보고서 포함)
+                    return realData;
 
                 } catch (e) {
                     console.error("Failed to fetch real data, falling back to simulation:", e);
                     // 실패 시 시뮬레이션 데이터 반환 로직으로 대체
+                    
+                    // [기존 시뮬레이션 코드]
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            const stock = this.currentDB.stocks.find(s => s.code === code);
+                            if(stock) {
+                                const { newPrice } = this.simulateChange(stock.price);
+                                stock.change += (newPrice - stock.price);
+                                stock.price = newPrice;
+                                stock.rate = parseFloat(((stock.change / (stock.price - stock.change)) * 100).toFixed(2));
+                                // 시뮬레이션 시에는 뉴스/보고서 필드가 없으므로 가격 정보만 반환
+                                resolve(stock); 
+                            }
+                        }, 100);
+                    });
                 }
-                */
-                // --------------------------------------------------------
-                
-                // [현재 시뮬레이션 코드 유지]
-                return new Promise(resolve => {
-                    setTimeout(() => {
-                        const stock = this.currentDB.stocks.find(s => s.code === code);
-                        if(stock) {
-                            const { newPrice } = this.simulateChange(stock.price);
-                            stock.change += (newPrice - stock.price);
-                            stock.price = newPrice;
-                            stock.rate = parseFloat(((stock.change / (stock.price - stock.change)) * 100).toFixed(2));
-                            resolve(stock);
-                        }
-                    }, 100);
-                });
             }
         }
 
@@ -557,16 +566,31 @@
                 document.getElementById('loading-overlay').classList.add('hidden');
             }
 
-            // 실시간 가격 업데이트 루프
+            // [수정됨] 실시간 가격 업데이트 루프: 뉴스 및 보고서 렌더링 추가
             startLiveUpdate() {
                 if(this.updateTimer) clearInterval(this.updateTimer);
                 this.updateTimer = setInterval(async () => {
                     if(this.state.activeCode) {
-                        const stock = await this.api.fetchRealtimePrice(this.state.activeCode);
-                        this.updateDetailPanel(stock);
+                        const realData = await this.api.fetchRealtimePrice(this.state.activeCode);
                         
-                        // [중요] 그리드 상의 데이터도 업데이트 (가격 등)
-                        this.updateGridItem(stock);
+                        // API 호출이 실패하고 시뮬레이션 데이터(가격만 있는)가 반환된 경우 처리
+                        if (realData.price === undefined) {
+                            // 시뮬레이션 데이터로 가격만 업데이트
+                            this.updateDetailPanel(realData); 
+                            this.updateGridItem(realData);
+                            // 뉴스/보고서는 업데이트하지 않음 (이전 데이터를 유지하거나 초기 상태 유지)
+                            return; 
+                        }
+
+                        // API 성공 시: 가격 업데이트
+                        this.updateDetailPanel(realData); 
+                        this.updateGridItem(realData);
+                        
+                        // API 성공 시: 뉴스, 보고서, 공시 업데이트 (Naver API 연동)
+                        this.renderDisclosure(realData.disclosure || []);
+                        this.renderNews(realData.news || []);
+                        this.renderReports(realData.reports || []);
+
                     }
                 }, 2000); // 2초 주기
             }
@@ -600,6 +624,7 @@
                 });
             }
 
+            // [수정됨] 종목 선택 시 리스트 초기화 로직 추가
             selectStock(code) {
                 this.state.activeCode = code;
                 const stock = this.state.stocks.find(s => s.code === code);
@@ -620,6 +645,11 @@
                     
                     document.getElementById('dart-link').href = `https://dart.fss.or.kr/dsac001/main.do?&textCrpNm=${encodeURIComponent(stock.name)}`;
                     document.getElementById('naver-talk-link').href = `https://finance.naver.com/item/board.naver?code=${stock.code}`;
+                    
+                    // 종목 변경 시 뉴스/보고서 목록을 로딩 상태로 초기화
+                    this.renderDisclosure(null);
+                    this.renderNews(null);
+                    this.renderReports(null);
                 }
             }
 
@@ -628,6 +658,7 @@
                 const elChange = document.getElementById('detail-change');
                 const oldPrice = parseInt(elPrice.textContent.replace(/,/g, '')) || 0;
                 
+                // API에서 price, rate, change 필드를 사용합니다.
                 const isUp = stock.rate > 0;
                 const color = isUp ? 'text-up' : 'text-down';
                 
@@ -656,6 +687,51 @@
                 document.getElementById('sim-low').textContent = Math.floor(low).toLocaleString();
                 document.getElementById('sim-high').textContent = Math.floor(high).toLocaleString();
                 document.getElementById('price-dot').style.left = `${percent}%`;
+            }
+
+            // [새로운 함수] 공시 정보 렌더링
+            renderDisclosure(data) {
+                const container = document.getElementById('daily-disclosure-list');
+                if (!data || data.length === 0) {
+                    container.innerHTML = `<p class="text-xs text-slate-400">데이터를 불러오는 중이거나, 당일 중요 공시 사항 없음.</p>`;
+                    return;
+                }
+                container.innerHTML = data.map(item => `
+                    <div class="truncate">
+                        <a href="${item.link}" target="_blank" class="text-red-600 hover:underline hover:text-red-700 font-medium">${item.title}</a>
+                        <span class="text-[10px] text-slate-400 ml-1">${item.date || ''}</span>
+                    </div>
+                `).join('');
+            }
+
+            // [새로운 함수] 뉴스 리스트 렌더링
+            renderNews(data) {
+                const container = document.getElementById('realtime-news-list');
+                if (!data || data.length === 0) {
+                    container.innerHTML = `<p class="text-xs text-slate-400">데이터를 불러오는 중이거나, 실시간 뉴스를 불러올 수 없습니다.</p>`;
+                    return;
+                }
+                container.innerHTML = data.map(item => `
+                    <div class="text-xs text-slate-700 truncate">
+                        <a href="${item.link}" target="_blank" class="hover:underline">${item.title}</a>
+                        <span class="text-[10px] text-slate-400 ml-1">${item.date}</span>
+                    </div>
+                `).join('');
+            }
+            
+            // [새로운 함수] 보고서 리스트 렌더링
+            renderReports(data) {
+                const container = document.getElementById('analyst-report-list');
+                if (!data || data.length === 0) {
+                    container.innerHTML = `<p class="text-xs text-slate-400">데이터를 불러오는 중이거나, 최근 애널리스트 보고서 없음.</p>`;
+                    return;
+                }
+                container.innerHTML = data.map(item => `
+                    <div class="text-xs text-slate-700 truncate">
+                        <a href="${item.link}" target="_blank" class="hover:underline">${item.title}</a>
+                        <span class="text-[10px] text-slate-400 ml-1">${item.date}</span>
+                    </div>
+                `).join('');
             }
 
             renderGlobal(data) {

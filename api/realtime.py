@@ -1,104 +1,154 @@
-# Vercel Serverless Function을 위한 Python 코드
-# Flask와 달리, Vercel의 요청 객체를 사용합니다.
+# Vercel Serverless Function (Python/Flask)
+# Filename: api/realtime.py
 
-import yfinance as yf
+import os
 import json
-from http.server import BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
+from flask import Flask, request, jsonify
+import yfinance as yf
+from datetime import datetime
+import requests # 네이버 API 호출을 위한 requests 라이브러리 사용
 
-# 야후 심볼을 생성하는 헬퍼 함수
-# Vercel 프로젝트의 stock-app에서 미리 정의된 KOSPI/KOSDAQ 코드를 이용해야 하지만,
-# 여기서는 심플하게 KOSDAQ 종목 심볼을 기본값으로 사용합니다.
-# 실제 DB가 없으므로 종목 코드를 기준으로 시장을 임의로 결정할 수 없습니다.
-def get_yahoo_symbol(code, market="KOSDAQ"):
-    """종목 코드와 시장을 기반으로 야후 심볼을 생성합니다."""
-    # 실제 앱에서는 KOSPI/KOSDAQ 종목 목록을 서버 DB에 저장하고 market 정보를 넘겨야 합니다.
-    suffix = '.KQ' if market == 'KOSDAQ' else '.KS' 
-    return f"{code}{suffix}"
+# 네이버 API 설정을 환경 변수에서 불러옴 (보안을 위해 코드에 직접 키를 넣지 않음)
+NAVER_CLIENT_ID = os.environ.get('NAVER_CLIENT_ID')
+NAVER_CLIENT_SECRET = os.environ.get('NAVER_CLIENT_SECRET')
 
-def handler(request, response):
-    """
-    Vercel Serverless Function의 진입점(Entry Point).
-    /api/realtime?code=247540 와 같은 쿼리를 처리합니다.
-    """
+app = Flask(__name__)
+
+# KOSDAQ 종목 코드를 야후 파이낸스 심볼로 변환
+def get_yahoo_symbol(code):
+    # 한국 주식 (KOSPI/KOSDAQ)은 종목 코드 뒤에 '.KS' 또는 '.KQ'를 붙입니다.
+    # 여기서는 KOSDAQ 종목 코드를 사용한다고 가정하고 '.KQ'를 붙여서 심볼을 생성합니다.
+    return f'{code}.KQ'
+
+# 네이버 검색 API를 호출하여 뉴스 및 애널리스트 보고서를 가져오는 함수
+def fetch_naver_search(query, display=5, start=1, sort='date'):
+    if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
+        print("Naver API keys are not set. Returning empty list.")
+        return []
+
+    # 네이버 뉴스 검색 API 엔드포인트
+    # 보고서 대체 검색도 뉴스 API를 활용합니다.
+    news_url = "https://openapi.naver.com/v1/search/news.json"
     
-    # 쿼리 파라미터 추출
-    query_params = parse_qs(urlparse(request.url).query)
-    stock_code = query_params.get('code', [None])[0]
-
-    if not stock_code:
-        response.status = 400
-        response.send_header('Content-type', 'application/json')
-        response.end_headers()
-        response.wfile.write(json.dumps({"error": "Stock code 'code' is required."}).encode())
-        return
-
-    # KOSDAQ 종목 심볼 (247540 -> 247540.KQ)
-    # NOTE: 실제 KOSPI 종목 코드를 넣을 경우, 시장 정보를 함께 넘겨줘야 정확히 작동합니다.
-    # 예시를 위해 KOSDAQ으로 고정합니다.
-    yahoo_symbol = get_yahoo_symbol(stock_code, "KOSDAQ") 
+    headers = {
+        'X-Naver-Client-Id': NAVER_CLIENT_ID,
+        'X-Naver-Client-Secret': NAVER_CLIENT_SECRET
+    }
     
-    # CORS 헤더 설정 (매우 중요: HTML 파일이 데이터를 요청할 수 있도록 허용)
-    response.send_header('Access-Control-Allow-Origin', '*')
-    response.send_header('Access-Control-Allow-Methods', 'GET')
-    response.send_header('Access-Control-Allow-Headers', 'Content-Type')
-
+    params = {
+        'query': query,
+        'display': display,
+        'start': start,
+        'sort': sort # 'date' (날짜순) 또는 'sim' (정확도순)
+    }
 
     try:
-        # yfinance를 사용하여 데이터 요청
-        ticker = yf.Ticker(yahoo_symbol)
-        data = ticker.fast_info 
+        # 네이버 API 호출
+        response = requests.get(news_url, headers=headers, params=params)
+        response.raise_for_status()  # 200 OK가 아니면 예외 발생
+        return response.json().get('items', [])
+    except requests.RequestException as e:
+        print(f"Error fetching Naver API for query '{query}': {e}")
+        return []
+
+# 네이버 API에서 가져온 항목을 클라이언트에서 사용하기 쉬운 형태로 포맷
+def format_naver_item(item):
+    # HTML 태그 제거 및 기본 형식 유지
+    title = item.get('title', '').replace('<b>', '').replace('</b>', '').replace('&quot;', '"').replace('&amp;', '&')
+    link = item.get('link', '#')
+    
+    date_formatted = ""
+    date_str = item.get('pubDate')
+    if date_str:
+        # 네이버 API 날짜 포맷: Mon, 04 Dec 2025 09:00:00 +0900
+        try:
+            date_obj = datetime.strptime(date_str, '%a, %d %b %Y %H:%M:%S %z')
+            date_formatted = date_obj.strftime('%Y-%m-%d')
+        except ValueError:
+            date_formatted = ""
+
+    return {
+        "title": title,
+        "link": link,
+        "date": date_formatted
+    }
+
+
+@app.route('/api/realtime')
+def realtime_price():
+    code = request.args.get('code')
+    if not code:
+        return jsonify({"error": "Stock code is required"}), 400
+
+    symbol = get_yahoo_symbol(code)
+    ticker = yf.Ticker(symbol)
+    
+    realtime_data = {}
+    
+    # 1. 야후 파이낸스에서 실시간/지연 가격 정보 가져오기
+    try:
+        info = ticker.info
+        current_price = info.get('currentPrice')
+        previous_close = info.get('previousClose')
         
-        # yfinance에서 제공하는 데이터를 클라이언트가 이해할 수 있는 JSON 형태로 가공
-        current_price = data.last_price
-        previous_close = data.previous_close
-        
-        # 등락액 및 등락률 계산
+        if current_price is None or previous_close is None:
+            # 데이터가 없을 경우 클라이언트에서 시뮬레이션 폴백이 작동하도록 에러 반환
+            return jsonify({"error": "Price data not available"}), 503
+            
         change = current_price - previous_close
-        rate = (change / previous_close) * 100 if previous_close else 0
+        rate = (change / previous_close) * 100
         
-        # 응답 데이터
-        response_data = {
-            "code": stock_code,
+        realtime_data.update({
             "price": round(current_price),
-            "change": round(change), 
-            "rate": round(rate, 2)
-        }
-        
-        response.status = 200
-        response.send_header('Content-type', 'application/json')
-        response.end_headers()
-        response.wfile.write(json.dumps(response_data).encode())
+            "change": round(change),
+            "rate": round(rate, 2),
+            "timestamp": datetime.now().isoformat()
+        })
 
     except Exception as e:
-        print(f"Error fetching data for {yahoo_symbol}: {e}")
-        response.status = 500
-        response.send_header('Content-type', 'application/json')
-        response.end_headers()
-        response.wfile.write(json.dumps({"error": f"Data fetch failed: {str(e)}"}).encode())
-        
-# Vercel 환경에서 요청을 처리하기 위한 메인 함수 (Flask 아님)
-def main(request, response):
-    """Vercel entry point adapter"""
-    # BaseHTTPRequestHandler를 상속받지 않는 환경을 위한 단순화된 핸들링
-    class DummyHandler(BaseHTTPRequestHandler):
-        def __init__(self, request, response):
-            self.rfile = request.rfile
-            self.wfile = response.wfile
-            self.headers = request.headers
-            self.command = request.method
-            self.path = request.url
-            self.url = request.url
-            self.raw_requestline = b''
-            self.client_address = ('', 0)
-            self.request_version = 'HTTP/1.1'
-            self.close_connection = True
-            
-            # 응답 객체에 필요한 속성 추가 (status, send_header, end_headers, wfile)
-            response.status = 200
-            response.send_header = lambda name, value: response.headers.append((name, value))
-            response.end_headers = lambda: None # Vercel 환경에서는 헤더를 수동으로 끝낼 필요 없음
-            
-            handler(request, response)
+        print(f"Error fetching Yahoo Finance for {symbol}: {e}")
+        # 야후 파이낸스 실패 시 클라이언트에서 시뮬레이션 폴백이 작동하도록 에러 반환
+        return jsonify({"error": "Yahoo Finance data fetch failed"}), 503
 
-    DummyHandler(request, response)
+    # 2. 네이버 검색 API를 사용하여 뉴스 및 보고서 가져오기
+    # Yahoo Finance에서 종목 이름이 없을 경우 코드를 사용
+    stock_name = info.get('shortName', code) 
+    
+    # 실시간 뉴스 (날짜순, 5개)
+    news_items = fetch_naver_search(f'{stock_name} 주식', display=5, sort='date')
+    
+    # 애널리스트 보고서 대체 (키워드 추가하여 정확도순, 5개)
+    # 네이버 뉴스 API를 사용하여 '보고서' 키워드와 함께 검색
+    report_items = fetch_naver_search(f'{stock_name} 애널리스트 보고서', display=5, sort='sim')
+    
+    
+    # 3. 최종 결과 포맷팅 및 병합
+    
+    formatted_news = [format_naver_item(item) for item in news_items]
+    formatted_reports = [format_naver_item(item) for item in report_items]
+
+
+    # 4. 최종 결과 반환
+    final_response = {
+        "price": realtime_data["price"],
+        "change": realtime_data["change"],
+        "rate": realtime_data["rate"],
+        "news": formatted_news,
+        "reports": formatted_reports,
+        # 공시 정보는 DART 링크로 대체
+        "disclosure": [
+            {"title": f"{stock_name} (DART)", "link": f"https://dart.fss.or.kr/dsac001/main.do?&textCrpNm={stock_name}"}
+        ]
+    }
+
+    return jsonify(final_response)
+
+if __name__ == '__main__':
+    # 로컬 테스트를 위한 더미 키 설정 (실제 환경 변수가 없으면)
+    if not NAVER_CLIENT_ID:
+        os.environ['NAVER_CLIENT_ID'] = 'LOCAL_ID'
+        os.environ['NAVER_CLIENT_SECRET'] = 'LOCAL_SECRET'
+        NAVER_CLIENT_ID = 'LOCAL_ID'
+        NAVER_CLIENT_SECRET = 'LOCAL_SECRET'
+
+    app.run(debug=True, host='0.0.0.0', port=5000)

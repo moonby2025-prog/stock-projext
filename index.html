@@ -8,44 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        /* [Critical] Static Styles for Diagnostics (No Tailwind dependency) */
-        #diagnostic-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: white;
-            z-index: 99999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-family: sans-serif;
-            text-align: center;
-            padding: 20px;
-        }
-        .status-box {
-            border: 2px solid #3b82f6;
-            background-color: #eff6ff;
-            color: #1e40af;
-            padding: 20px;
-            border-radius: 8px;
-            max-width: 400px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .error-box {
-            display: none; /* Hidden by default */
-            border: 2px solid #ef4444;
-            background-color: #fef2f2;
-            color: #b91c1c;
-            padding: 20px;
-            border-radius: 8px;
-            max-width: 400px;
-            margin-top: 20px;
-        }
-
         /* Original App Styles */
         body {
             font-family: 'Inter', sans-serif;
@@ -108,23 +70,28 @@
         .rank-kosdaq { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
         .loading { animation: pulse-soft 1.5s infinite; }
         @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        /* Error Banner */
+        #error-banner {
+            display: none;
+            background-color: #fee2e2;
+            border-bottom: 1px solid #ef4444;
+            color: #b91c1c;
+            padding: 0.5rem;
+            font-size: 0.75rem;
+            text-align: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+        }
     </style>
 </head>
 <body class="p-3 h-screen w-screen overflow-hidden text-slate-800 flex flex-col gap-3">
 
-    <!-- [Critical] Diagnostic Overlay -->
-    <!-- 이 화면이 보이면 파일은 정상적으로 로드된 것입니다. -->
-    <div id="diagnostic-overlay">
-        <div class="status-box">
-            <h2 style="margin:0 0 10px 0; font-size: 1.2rem; font-weight: bold;">✅ HTML 파일 로드 성공</h2>
-            <p style="margin:0;">파일이 브라우저에 도달했습니다.<br>앱 초기화를 시도합니다...</p>
-        </div>
-        <div id="js-status" style="color: #64748b; font-size: 0.9rem;">JavaScript 대기 중...</div>
-        <div id="js-error-box" class="error-box">
-            <h3 style="margin:0 0 5px 0;">⛔ 오류 발생</h3>
-            <p id="error-message" style="margin:0; font-size:0.9rem; word-break: break-all;"></p>
-        </div>
-    </div>
+    <!-- Error Diagnostic Banner -->
+    <div id="error-banner"></div>
 
     <!-- 1. Header & Controls -->
     <header class="flex-none flex items-center justify-between bg-white px-4 py-3 rounded-xl shadow-sm border border-slate-200 mt-2">
@@ -139,7 +106,7 @@
         </div>
         
         <div class="flex items-center gap-2">
-            <button onclick="app.refreshData()" class="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+            <button onclick="app.refreshData()" class="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="데이터 새로고침">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
@@ -229,26 +196,22 @@
     </main>
 
     <script>
-        // [Diagnostic] Global Error Handler
+        // [Safety Check] Global Error Handler
         window.onerror = function(message, source, lineno, colno, error) {
-            const statusEl = document.getElementById('js-status');
-            const errorBox = document.getElementById('js-error-box');
-            const errorMsg = document.getElementById('error-message');
-            
-            if (statusEl) statusEl.textContent = "초기화 중단됨";
-            if (errorBox) {
-                errorBox.style.display = 'block';
-                errorMsg.textContent = `${message} (Line: ${lineno})`;
-            }
-            console.error("Critical Error:", error);
+            const banner = document.getElementById('error-banner');
+            banner.style.display = 'block';
+            banner.textContent = `⚠️ 오류 발생: ${message} (Line: ${lineno}) - 앱이 정지된 경우 새로고침 해주세요.`;
+            console.error("Dashboard Error:", error);
             return false;
         };
 
-        // Update status immediately
-        document.getElementById('js-status').textContent = "스크립트 로딩 성공. 실행 중...";
-
+        /**
+         * [API Service Layer]
+         * Mock Data Service - Safe Mode
+         */
         class StockApiService {
             constructor() {
+                // 2025-12-04 Snapshot Data
                 this.db = {
                     global: [
                         { name: 'KOSPI', value: 4023.74, change: -12.45, rate: -0.31 },
@@ -444,14 +407,16 @@
                     setInterval(() => this.updateTime(), 60000);
                     
                     // [Diagnostic] Remove overlay if initialization is successful
-                    const overlay = document.getElementById('diagnostic-overlay');
-                    if (overlay) {
-                        overlay.style.display = 'none'; // Hide overlay on success
-                    }
+                    // const overlay = document.getElementById('diagnostic-overlay');
+                    // if (overlay) {
+                    //     overlay.style.display = 'none'; // Hide overlay on success
+                    // }
                     console.log("App Initialized Successfully.");
                 } catch (err) {
                     console.error("Init failed:", err);
-                    document.getElementById('js-status').textContent = '초기화 실패 (콘솔 확인)';
+                    document.getElementById('error-banner').style.display = 'block';
+                    document.getElementById('error-banner').textContent = `초기화 실패: ${err.message || '알 수 없는 오류'}`;
+                    // document.getElementById('js-status').textContent = '초기화 실패 (콘솔 확인)';
                     throw err; // Trigger global handler
                 }
             }

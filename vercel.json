@@ -15,6 +15,5 @@
       "src": "/(.*)",
       "dest": "public/$1"
     }
-  ],
-  "vercel_force_update": "20251206_final_fix"
+  ]
 }

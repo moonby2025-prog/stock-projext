@@ -14,10 +14,9 @@ NAVER_CLIENT_SECRET = os.environ.get('NAVER_CLIENT_SECRET')
 
 app = Flask(__name__)
 
-# KOSDAQ 종목 코드를 야후 파이낸스 심볼로 변환
+# KOSDAQ 종목 코드를 야후 파이낸스 심볼로 변환 (Git 변경점 인식용 수정)
 def get_yahoo_symbol(code):
     # 한국 주식 (KOSPI/KOSDAQ)은 종목 코드 뒤에 '.KS' 또는 '.KQ'를 붙입니다.
-    # 여기서는 KOSDAQ 종목 코드를 사용한다고 가정하고 '.KQ'를 붙여서 심볼을 생성합니다.
     return f'{code}.KQ'
 
 # 네이버 검색 API를 호출하여 뉴스 및 애널리스트 보고서를 가져오는 함수

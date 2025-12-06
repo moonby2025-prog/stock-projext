@@ -866,13 +866,13 @@
         async function fetchGroundedNews(symbol, name) {
             const newsBox = document.getElementById('content-news');
             
-            // ✅ [수정] 절대 경로를 사용하도록 변경하여 TypeError 해결
-            const proxyUrl = window.location.origin + '/api/news'; 
+            // ✅ Vercel 서버의 비밀 요원 주소를 지정합니다.
+            const proxyUrl = '/api/news'; 
 
             // 로딩 상태 표시
             newsBox.innerHTML = `
                 <div class="text-center py-10 text-slate-400">
-                    <i class="fa-solid fa-server text-blue-500 mr-2 text-xl fa-spin"></i> 
+                    <i class="fa-solid fa-server text-blue-500 mr-2 text-xl"></i> 
                     <p class="mt-2 text-sm">Vercel 서버를 통해 최신 뉴스 데이터를 요청 중...</p>
                 </div>
             `;
@@ -896,7 +896,7 @@
 
                 const result = await response.json();
 
-                if (response.ok && result.success && result.data && Array.isArray(result.data)) {
+                if (response.ok && result.data && Array.isArray(result.data)) {
                     // 서버에서 받은 데이터를 사용합니다.
                     const data = result.data; 
 
@@ -939,22 +939,13 @@
                         newsBox.innerHTML = '<div class="text-center py-10 text-slate-400">서버로부터 뉴스 데이터를 받지 못했습니다.</div>';
                     }
 
-                } else if(result.error) {
+                } else {
                     // 서버 오류 메시지 처리
                     newsBox.innerHTML = `
                         <div class="text-center py-10 text-red-500/80">
                             <i class="fa-solid fa-triangle-exclamation mr-2"></i> 
                             <strong>뉴스 정보를 가져오지 못했습니다.</strong>
-                            <p class="text-sm text-slate-600 dark:text-slate-400 mt-2">서버(Vercel) 오류: ${result.error}</p>
-                            <p class="text-xs text-slate-500 mt-1">API 키 설정 또는 Vercel 배포 상태를 확인해 주세요.</p>
-                        </div>
-                    `;
-                } else {
-                     newsBox.innerHTML = `
-                        <div class="text-center py-10 text-red-500/80">
-                            <i class="fa-solid fa-triangle-exclamation mr-2"></i> 
-                            <strong>뉴스 정보를 가져오지 못했습니다.</strong>
-                            <p class="text-sm text-slate-600 dark:text-slate-400 mt-2">서버(Vercel) 응답 구조가 유효하지 않습니다.</p>
+                            <p class="text-sm text-slate-600 dark:text-slate-400 mt-2">서버(Vercel) 통신 실패: ${result.error || '알 수 없는 오류'}</p>
                         </div>
                     `;
                 }
@@ -1281,7 +1272,9 @@
                 // --- SECTOR LIST VIEW (업종별 목록 보기 - 기존 로직 유지) ---
                 mapContentHtml += `<div class="bg-white p-4 rounded-2xl shadow-xl border border-slate-200 dark:bg-slate-800 dark:border-slate-700 space-y-6">`;
                 
-                const sortedSectors = Object.keys(finalStocksBySector).sort((a, b) => totalCapBySector[b] - totalCapBySector[a]);
+                const sortedSectors = Object.keys(finalStocksBySector).sort((a, b) => {
+                    return totalCapBySector[b] - totalCapBySector[a]; 
+                });
 
                 sortedSectors.forEach(sectorName => {
                     const stocks = finalStocksBySector[sectorName];

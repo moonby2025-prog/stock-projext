@@ -2,9 +2,8 @@
   "version": 2,
   "builds": [
     {
-      "src": "index.html",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "./" }
+      "src": "public/index.html",
+      "use": "@vercel/static"
     },
     {
       "src": "api/news.js",
@@ -14,20 +13,11 @@
   "routes": [
     {
       "src": "/api/news",
-      "dest": "api/news.js",
-      "methods": ["POST"]
+      "dest": "api/news.js"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" }
-      ]
+      "dest": "public/index.html"
     }
   ]
 }

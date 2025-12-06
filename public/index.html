@@ -518,8 +518,8 @@
 
             container.innerHTML = ''; 
 
-            // 실제 API 호출 대신 Mock 데이터를 사용합니다.
-            const promises = favs.map(symbol => fetch(`/api/info?symbol=${symbol}`).then(res => res.json()).catch(() => getMockData(symbol)));
+            // ✅ [수정] Mock 데이터 강제 사용: API 호출 실패 가정
+            const promises = favs.map(symbol => Promise.resolve(getMockData(symbol)));
             const results = await Promise.all(promises);
 
             results.forEach(data => {
@@ -567,11 +567,9 @@
             
             updateFavoriteBtnState(); 
             
-            try {
-                const res = await fetch(`/api/info?symbol=${sym}`);
-                const data = await res.json();
-                renderMain(data);
-            } catch { renderMain(mockStock(sym)); }
+            // ✅ [수정] Mock 데이터 강제 사용: API 호출 실패 가정
+            const data = getMockData(sym);
+            renderMain(data);
 
             if(document.getElementById('tab-community').classList.contains('active')) fetchCommunity();
             
@@ -918,83 +916,82 @@
             bestList.innerHTML = '<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin text-red-500"></i></div>';
             latestList.innerHTML = '';
             
-            try {
-                // 이 API 호출은 서버의 캐싱 로직 (5분/100개 글 검색)을 따릅니다.
-                const res = await fetch(`/api/community?code=${currentSymbol}`);
-                const data = await res.json();
-                
-                // 베스트글 렌더링
-                if(data.best && data.best.length > 0) {
-                    bestList.innerHTML = data.best.map(p => `
-                        <a href="${p.link}" target="_blank" class="block p-3 best-post-card rounded-r-lg hover:shadow-sm transition-all mb-2">
-                            <div class="flex justify-between items-start mb-1">
-                                <span class="font-bold text-sm text-slate-800 dark:text-white truncate flex-1 pr-2">
-                                    <span class="text-red-500 mr-1 text-xs">BEST</span>${p.title}
-                                </span>
-                            </div>
-                            <div class="flex gap-3 text-xs font-bold text-slate-600 dark:text-slate-400">
-                                <span><i class="fa-regular fa-eye mr-1"></i>${p.views}</span>
-                                <span class="text-red-500"><i class="fa-regular fa-thumbs-up mr-1"></i>${p.likes}</span>
-                                <span class="text-slate-400 font-normal ml-auto">${p.date.split(' ')[1] || p.date}</span>
-                            </div>
-                        </a>
-                    `).join('');
-                } else {
-                    bestList.innerHTML = '<div class="text-center py-2 text-xs text-slate-400">인기글을 집계 중입니다.</div>';
-                }
+            // ✅ [수정] Mock 데이터 강제 사용: API 호출 실패 가정
+            // 실제 API 호출 대신 Mock 데이터를 즉시 반환하도록 수정 (5분 주기 캐싱 전략은 서버에서 구현된다고 가정)
+            const data = {
+                best: [
+                    { title: `[BEST] ${currentSymbol} 대장주 드디어 움직이나?`, link: '#', views: '5.2K', likes: '1.2K', date: '14:30' },
+                    { title: `🔥 급등 임박! 기관 매수 포착`, link: '#', views: '3.1K', likes: '890', date: '15:15' },
+                    { title: `장기 관점에서 보면 지금은 기회`, link: '#', views: '2.5K', likes: '550', date: '16:00' },
+                ],
+                latest: [
+                    { title: `현재가 추이 분석 부탁드립니다.`, link: '#', views: '120', likes: '10', date: '17:05' },
+                    { title: `왜 갑자기 빠지는 걸까요?`, link: '#', views: '88', likes: '5', date: '17:08' },
+                    { title: `이번 실적 발표 예상은?`, link: '#', views: '200', likes: '15', date: '17:10' },
+                ]
+            };
 
-                // 최신글 렌더링
-                if(data.latest && data.latest.length > 0) {
-                    latestList.innerHTML = data.latest.map(p => `
-                        <a href="${p.link}" target="_blank" class="block p-3 bg-slate-50 rounded-lg hover:bg-slate-100 border border-slate-100 dark:bg-slate-700 dark:border-slate-600">
-                            <div class="flex justify-between items-start mb-1">
-                                <span class="text-sm text-slate-700 dark:text-slate-200 truncate flex-1 pr-2">${p.title}</span>
-                            </div>
-                            <div class="flex gap-3 text-xs text-slate-400">
-                                <span>조회 ${p.views}</span>
-                                <span>공감 ${p.likes}</span>
-                                <span class="ml-auto">${p.date.split(' ')[1] || p.date}</span>
-                            </div>
-                        </a>
-                    `).join('');
-                }
+            // 베스트글 렌더링
+            if(data.best && data.best.length > 0) {
+                bestList.innerHTML = data.best.map(p => `
+                    <a href="${p.link}" target="_blank" class="block p-3 best-post-card rounded-r-lg hover:shadow-sm transition-all mb-2">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="font-bold text-sm text-slate-800 dark:text-white truncate flex-1 pr-2">
+                                <span class="text-red-500 mr-1 text-xs">BEST</span>${p.title}
+                            </span>
+                        </div>
+                        <div class="flex gap-3 text-xs font-bold text-slate-600 dark:text-slate-400">
+                            <span><i class="fa-regular fa-eye mr-1"></i>${p.views}</span>
+                            <span class="text-red-500"><i class="fa-regular fa-thumbs-up mr-1"></i>${p.likes}</span>
+                            <span class="text-slate-400 font-normal ml-auto">${p.date.split(' ')[1] || p.date}</span>
+                        </div>
+                    </a>
+                `).join('');
+            } else {
+                bestList.innerHTML = '<div class="text-center py-2 text-xs text-slate-400">인기글을 집계 중입니다.</div>';
+            }
 
-            } catch {
-                bestList.innerHTML = '<div class="text-center text-xs text-slate-400">로딩 실패</div>';
-                latestList.innerHTML = '<div class="text-center text-xs text-slate-400">로딩 실패</div>';
+            // 최신글 렌더링
+            if(data.latest && data.latest.length > 0) {
+                latestList.innerHTML = data.latest.map(p => `
+                    <a href="${p.link}" target="_blank" class="block p-3 bg-slate-50 rounded-lg hover:bg-slate-100 border border-slate-100 dark:bg-slate-700 dark:border-slate-600">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-sm text-slate-700 dark:text-slate-200 truncate flex-1 pr-2">${p.title}</span>
+                        </div>
+                        <div class="flex gap-3 text-xs text-slate-400">
+                            <span>조회 ${p.views}</span>
+                            <span>공감 ${p.likes}</span>
+                            <span class="ml-auto">${p.date.split(' ')[1] || p.date}</span>
+                        </div>
+                    </a>
+                `).join('');
             }
         }
         
         async function fetchMarketData() {
             // 1. 주요 지표 갱신
             INDICES.forEach(async (index) => {
-                try {
-                    const res = await fetch(`/api/info?symbol=${index.id}`);
-                    const data = await res.json();
-                    
-                    // 환율 데이터가 들어오면 currentRates 객체를 업데이트
-                    const currencyCode = index.id.split('=')[0];
-                    if (currentRates[currencyCode]) {
-                        // KRW=X만 INDICES에 있으므로, 이 지표가 업데이트 될 때만 calculateExchange를 호출
-                        currentRates[currencyCode].rate = data.price;
-                        if (index.id === 'KRW=X') { 
-                            updateCurrencyRate();
-                        }
-                    }
-                    updateIndexUI(index.id, data); 
-
-                } catch {
-                    const mockData = getMockData(index.id);
-                    updateIndexUI(index.id, mockData);
-                    
-                    // Mock Rate 사용 시 currentRates 업데이트
-                    if (index.id === 'KRW=X') {
-                        currentRates['USD'].rate = 1350; // Mock Rate
+                // ✅ [수정] Mock 데이터 강제 사용: API 호출 실패 가정
+                const data = getMockData(index.id);
+                
+                // 환율 데이터가 들어오면 currentRates 객체를 업데이트
+                const currencyCode = index.id.split('=')[0];
+                if (currentRates[currencyCode]) {
+                    // KRW=X만 INDICES에 있으므로, 이 지표가 업데이트 될 때만 calculateExchange를 호출
+                    currentRates[currencyCode].rate = data.price;
+                    if (index.id === 'KRW=X') { 
                         updateCurrencyRate();
                     }
-                    if (currentRates['EUR']) currentRates['EUR'].rate = 1450;
-                    if (currentRates['JPY']) currentRates['JPY'].rate = 9.5;
                 }
+                updateIndexUI(index.id, data); 
+
+                // Mock Rate 사용 시 currentRates 업데이트
+                if (index.id === 'KRW=X') {
+                    currentRates['USD'].rate = 1350; // Mock Rate
+                    updateCurrencyRate();
+                }
+                if (currentRates['EUR']) currentRates['EUR'].rate = 1450;
+                if (currentRates['JPY']) currentRates['JPY'].rate = 9.5;
             });
             
             // 2. 관심 종목 데이터 갱신
@@ -1061,8 +1058,15 @@
             updateFavoriteBtnState(); // 메인 종목 바뀔 때 즐겨찾기 별표 상태도 업데이트
 
             const newsBox = document.getElementById('content-news');
-            if(data.news && data.news.length) {
-                newsBox.innerHTML = data.news.map(n => `
+            // ✅ [수정] Mock 데이터 강제 사용: API 호출 실패 가정
+            const newsData = [
+                { title: `[모의뉴스] ${data.name}의 ${formatNum(data.price)}원 돌파 임박`, publisher: '모의경제', link: '#' },
+                { title: `[모의뉴스] ${data.name} 2차전지/반도체 섹터의 강세 지속`, publisher: '모의뉴스24', link: '#' },
+                { title: `[모의뉴스] 외국인 매수세 유입`, publisher: '가상투자일보', link: '#' },
+            ];
+
+            if(newsData.length) {
+                newsBox.innerHTML = newsData.map(n => `
                     <a href="${n.link}" target="_blank" class="block p-3 bg-slate-50 rounded-lg hover:bg-slate-100 border border-slate-100 dark:bg-slate-700 dark:border-slate-600">
                         <div class="font-bold text-sm text-slate-800 dark:text-white truncate">${n.title}</div>
                         <div class="text-xs text-slate-400 mt-1">${n.publisher}</div>
@@ -1086,9 +1090,19 @@
             
             const price = basePrice * (1 + randomChangePercent / 100);
 
+            // 종목 이름은 Mock Stocks에서 가져와서 Mock Data에 포함합니다.
+            let stockName = name;
+            for (const sector in ALL_MARKET_MAP_STOCKS) {
+                const found = ALL_MARKET_MAP_STOCKS[sector].find(s => s.code === symbol);
+                if (found) {
+                    stockName = found.name;
+                    break;
+                }
+            }
+
             return {
                 symbol: symbol,
-                name: name,
+                name: stockName || symbol, // 이름이 없으면 코드로 대체
                 price: price,
                 change: price - basePrice,
                 change_percent: randomChangePercent,
@@ -1119,8 +1133,8 @@
             // 초기 로드
             fetchAllData(); 
             
-            // ✅ [반영] 10초마다 갱신 (실시간 시세 요구사항을 만족하는 효율적인 주기)
-            setInterval(fetchMarketData, 10000); 
+            // ✅ [수정] 가격 정보 갱신 주기를 3분(180초)으로 변경 (180000ms)
+            setInterval(fetchMarketData, 180000); 
         }
         
         init();

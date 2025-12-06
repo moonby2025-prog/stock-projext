@@ -1,934 +1,304 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>코스피/코스닥 통합 대시보드 (최종 버전)</title>
-    <!-- Tailwind CSS -->
+    <title>Stock Dashboard Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
     <style>
-        /* [스타일 복원] 기존 디자인 시스템 유지 */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        .num-font { font-family: 'Roboto Mono', monospace; letter-spacing: -0.5px; }
-        .custom-scroll::-webkit-scrollbar { width: 6px; }
-        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-        .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
         
-        /* 카드 스타일 (Hover 효과 포함) */
-        .stock-item {
-            cursor: pointer;
-            padding: 0.75rem; 
-            transition: all 0.2s ease;
-            border-radius: 0.75rem; 
-            border: 1px solid #e2e8f0; 
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            min-height: 4.5rem; 
-            background-color: white;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        }
-        .stock-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 10px -3px rgba(0, 0, 0, 0.1);
-            z-index: 10;
-        }
-        .stock-item.active {
-            ring: 3px solid #4f46e5; 
-            ring-offset: 1px;
-            z-index: 20;
-            background-color: #ffffff;
-            border-color: #4f46e5;
-        }
-
-        /* 뱃지 스타일 (Top 3, Top 10 등 구분) */
-        .rank-badge-top {
-            font-size: 0.6rem;
-            padding: 0.2rem 0.5rem;
-            border-radius: 9999px;
-            font-weight: 800;
-            white-space: nowrap;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-            height: 1.5rem;
-        }
-        .badge-red { background-color: #ef4444; color: white; }
-        .badge-top10 { background-color: #4f46e5; color: white; }
-        .badge-top20 { background-color: #f59e0b; color: #1f2937; }
-        .badge-top30 { background-color: #14b8a6; color: white; }
-        .badge-default { background-color: #e5e7eb; color: #4b5563; }
-
-        /* 텍스트 컬러 */
-        .text-up { color: #dc2626; font-weight: 700; }
-        .text-down { color: #2563eb; font-weight: 700; }
-        .bg-up { background-color: #fee2e2; color: #991b1b; }
-        .bg-down { background-color: #dbeafe; color: #1e40af; }
-
-        /* 레이아웃 컨테이너 */
-        .global-card, .main-section-card {
-            background-color: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        }
-        .main-section-card {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-
-        /* 차트 버튼 */
-        .chart-button {
-            border: 1px solid #e2e8f0;
-            background-color: white;
-            color: #475569;
-        }
-        .chart-button.active {
-            background-color: #4f46e5;
-            color: white;
-            border-color: #4f46e5;
-            box-shadow: 0 2px 5px rgba(79, 70, 229, 0.3);
-        }
-
-        /* 섹터 아이콘 */
-        .sector-icon {
-            transform: scale(1);
-            transition: all 0.2s ease-in-out;
-            cursor: pointer;
-            margin-right: 0.6rem !important; 
-        }
-        .sector-icon:hover { transform: scale(1.1); }
-
-        /* 라이브 상태 표시 (깜빡임 효과) */
-        .live-dot {
-            height: 8px;
-            width: 8px;
-            background-color: #ef4444;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
-            animation: blink 2s infinite;
-        }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-
-        /* 가격 변동 시 배경 깜빡임 애니메이션 */
-        @keyframes flash-red { 0% { background-color: #fee2e2; } 100% { background-color: transparent; } }
-        @keyframes flash-blue { 0% { background-color: #dbeafe; } 100% { background-color: transparent; } }
-        .flash-up { animation: flash-red 0.5s ease-out; }
-        .flash-down { animation: flash-blue 0.5s ease-out; }
+        /* 탭 스타일 */
+        .tab-btn { border-bottom: 2px solid transparent; color: #64748b; transition: all 0.2s; }
+        .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 700; }
+        .dark .tab-btn.active { border-bottom: 2px solid #60a5fa; color: #60a5fa; }
+        
+        /* 베스트글 강조 효과 */
+        .best-post-card { background: linear-gradient(to right, #fef2f2, #fff); border-left: 3px solid #ef4444; }
+        .dark .best-post-card { background: linear-gradient(to right, #450a0a, #1e293b); border-left: 3px solid #f87171; }
     </style>
 </head>
-<body class="p-3 h-screen w-screen overflow-hidden text-slate-800 flex flex-col gap-3">
+<body class="bg-slate-50 text-slate-800 transition-colors duration-200 dark:bg-slate-900 dark:text-slate-100">
 
-    <!-- Header -->
-    <header class="flex-none flex items-center justify-between bg-white px-4 py-3 rounded-xl shadow-md border border-slate-200 mt-2">
-        <div class="flex items-center space-x-4">
-            <h1 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-                <span>📈</span>
-                <span>Market Dashboard</span>
-                <span class="ml-2 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] text-slate-500 font-bold flex items-center">
-                    <span class="live-dot"></span> LIVE
-                </span>
-            </h1>
-            <span id="last-updated" class="text-xs text-slate-400 border-l pl-3 hidden sm:inline font-mono">
-                Connecting...
-            </span>
-        </div>
-        
-        <div class="flex items-center gap-2">
-            <button onclick="app.refreshData()" class="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="데이터 새로고침">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-            </button>
-            <div class="inline-flex p-1 bg-slate-100 rounded-lg">
-                <button id="filter-all" onclick="app.setFilter('ALL')" class="px-3 py-1.5 text-xs font-bold rounded-md transition-all">ALL</button>
-                <button id="filter-kospi" onclick="app.setFilter('KOSPI')" class="px-3 py-1.5 text-xs font-bold rounded-md transition-all">KOSPI</button>
-                <button id="filter-kosdaq" onclick="app.setFilter('KOSDAQ')" class="px-3 py-1.5 text-xs font-bold rounded-md transition-all">KOSDAQ</button>
+    <!-- 상단 헤더 -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 dark:bg-slate-800 dark:border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-blue-600 text-xl dark:text-blue-400"></i>
+                <h1 class="font-bold text-xl tracking-tight">Market Dashboard</h1>
+                <span class="flex items-center gap-1 text-xs font-medium bg-red-100 text-red-600 px-2 py-0.5 rounded-full animate-pulse dark:bg-red-900 dark:text-red-200">LIVE</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleDarkMode()" class="p-2"><i id="theme-icon" class="fa-solid fa-moon"></i></button>
             </div>
         </div>
     </header>
 
-    <!-- Global Indicators -->
-    <section id="global-stats" class="flex-none grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <!-- JS Rendered -->
-    </section>
-    
-    <!-- Main Content -->
-    <main class="flex-1 min-h-0 flex flex-col lg:flex-row gap-4">
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
         
-        <!-- Stock Map (Left Side) -->
-        <section class="flex-1 main-section-card flex flex-col min-h-0 min-w-0">
-            <div class="flex-none px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
-                <h2 class="text-sm font-bold text-slate-700 flex items-center">
-                    <span class="w-1.5 h-4 bg-indigo-600 rounded-full mr-2"></span>
-                    시장 지도 (Market Map)
-                </h2>
-                <div class="text-[10px] text-slate-400 bg-white px-2 py-1 rounded border">Market Cap Weighted</div>
-            </div>
-            
-            <div id="loading-overlay" class="hidden absolute inset-0 bg-white/80 z-50 flex items-center justify-center">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-            </div>
+        <!-- 1. 지표 카드 -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3" id="indices-container">
+            <!-- JS 로드 -->
+        </div>
 
-            <!-- 스크롤 영역 배경색 기존 회색톤 유지 -->
-            <div class="flex-1 overflow-y-auto p-3 custom-scroll bg-gray-50">
-                <div id="industry-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                    <!-- Cards will be rendered here by JS -->
-                </div>
-            </div>
-        </section>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 왼쪽: 메인 패널 (2/3) -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+                    
+                    <!-- 검색 및 가격 -->
+                    <div class="p-6 pb-0">
+                        <div class="flex gap-2 mb-6">
+                            <input type="text" id="symbol-input" value="005930" class="bg-slate-50 border border-slate-200 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600" onkeypress="if(event.key==='Enter') fetchAllData()">
+                            <button onclick="fetchAllData()" class="bg-blue-600 text-white rounded-lg px-5 py-2.5 text-sm">조회</button>
+                        </div>
+                        
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <h2 class="text-3xl font-bold" id="main-price">-</h2>
+                                <div class="flex items-end gap-2">
+                                    <div class="text-lg font-medium" id="main-change">-</div>
+                                    <div class="text-sm text-slate-400 mb-1" id="main-symbol">Loading...</div>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <a id="link-naver" href="#" target="_blank" class="px-4 py-2 bg-[#03C75A] text-white rounded-lg text-xs font-bold text-center">네이버 증권</a>
+                            </div>
+                        </div>
 
-        <!-- Detail Panel (Right Side) -->
-        <aside class="flex-none w-full lg:w-80 main-section-card flex flex-col min-h-0">
-            <!-- Header -->
-            <div class="flex-none p-5 border-b border-slate-50">
-                <div class="flex justify-between items-start mb-1">
-                    <span id="detail-badge" class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded">MARKET</span>
-                    <span id="detail-industry" class="text-xs text-slate-400 font-medium truncate ml-2">Sector</span>
-                </div>
-                <div class="flex justify-between items-end">
-                    <h2 id="detail-name" class="text-xl font-black text-slate-900 leading-tight">Loading...</h2>
-                    <span id="detail-code" class="text-xs text-slate-400 num-font mb-1">------</span>
-                </div>
-            </div>
-
-            <!-- Content -->
-            <div class="flex-1 overflow-y-auto p-5 custom-scroll">
-                <!-- 가격 표시 영역 (깜빡임 효과 적용 대상) -->
-                <div id="price-container" class="mb-6 rounded p-2 -m-2 transition-colors duration-300">
-                    <div class="flex items-baseline space-x-2">
-                        <span id="detail-price" class="text-3xl font-black num-font text-slate-900">-</span>
-                        <span class="text-xs text-slate-500 font-medium">KRW</span>
+                        <!-- 탭 메뉴 -->
+                        <div class="flex border-b border-slate-200 dark:border-slate-700">
+                            <button onclick="switchTab('news')" id="tab-news" class="tab-btn active flex-1 py-3 text-sm font-medium">
+                                <i class="fa-regular fa-newspaper mr-1"></i> 주요 뉴스
+                            </button>
+                            <button onclick="switchTab('community')" id="tab-community" class="tab-btn flex-1 py-3 text-sm font-medium">
+                                <i class="fa-solid fa-fire mr-1 text-red-500"></i> 토론방 (BEST)
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex items-center mt-2 space-x-2">
-                        <span id="detail-change" class="text-md font-bold num-font">-</span>
-                        <span id="detail-rate" class="px-2 py-0.5 rounded text-[10px] font-bold num-font">-</span>
+
+                    <!-- 탭 콘텐츠 영역 -->
+                    <div class="p-6 min-h-[300px]">
+                        <!-- 1. 뉴스 탭 -->
+                        <div id="content-news" class="space-y-3">
+                            <div class="text-center text-slate-400 py-10">데이터 로딩 중...</div>
+                        </div>
+
+                        <!-- 2. 커뮤니티 탭 -->
+                        <div id="content-community" class="hidden space-y-4">
+                            <!-- [NEW] 실시간 베스트 섹션 (강조됨) -->
+                            <div class="mb-6">
+                                <h4 class="text-sm font-bold text-red-500 mb-3 flex items-center">
+                                    <i class="fa-solid fa-crown mr-2"></i> 실시간 인기글 (Top 5)
+                                </h4>
+                                <div id="best-community-list" class="space-y-2">
+                                    <!-- 베스트글 5개 들어갈 곳 -->
+                                </div>
+                            </div>
+
+                            <hr class="border-slate-100 dark:border-slate-700 my-4">
+
+                            <!-- 일반 최신글 섹션 -->
+                            <h4 class="text-xs font-bold text-slate-500 mb-2">⏱️ 실시간 최신순</h4>
+                            <div id="latest-community-list" class="space-y-2">
+                                <!-- 최신글 리스트 -->
+                            </div>
+                        </div>
                     </div>
-                </div>
-
-                <div id="chart-controls" class="flex justify-start space-x-2 mb-4">
-                    <button onclick="app.setChartPeriod('DAY')" id="chart-day" class="chart-button text-xs px-3 py-1 rounded-full font-bold transition-colors">일</button>
-                    <button onclick="app.setChartPeriod('WEEK')" id="chart-week" class="chart-button text-xs px-3 py-1 rounded-full font-bold transition-colors">주</button>
-                    <button onclick="app.setChartPeriod('MONTH')" id="chart-month" class="chart-button text-xs px-3 py-1 rounded-full font-bold transition-colors">월</button>
-                </div>
-
-                <div id="stock-chart-placeholder" class="mb-6 bg-slate-100 p-4 h-40 flex flex-col items-center justify-center rounded-lg border border-slate-200 text-slate-400 text-sm font-medium text-center">
-                    <span>차트 데이터를 불러오는 중...</span>
-                    <span class="text-[10px] text-slate-400 mt-2 font-normal">(Live Data Simulation)</span>
-                </div>
-
-                <div class="mb-6 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                    <div class="flex justify-between text-[10px] text-slate-400 mb-1 font-semibold">
-                        <span>Day Low</span>
-                        <span>Day High</span>
-                    </div>
-                    <div class="w-full h-1.5 bg-slate-200 rounded-full relative mt-1">
-                        <div class="absolute top-0 bottom-0 bg-slate-400 rounded-full w-full opacity-30"></div>
-                        <div id="price-dot" class="w-3 h-3 bg-indigo-600 border-2 border-white rounded-full absolute top-1/2 -translate-y-1/2 shadow-sm transition-all duration-500" style="left: 50%;"></div>
-                    </div>
-                    <div class="flex justify-between text-[10px] num-font text-slate-400 mt-2">
-                        <span id="sim-low">-</span>
-                        <span id="sim-high">-</span>
-                    </>
-                </div>
-                
-                <div class="mb-6 global-card p-3">
-                    <h4 class="text-xs font-extrabold text-slate-700 mb-2 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                        당일 중요 공시사항
-                    </h4>
-                    <div id="daily-disclosure-list" class="space-y-1 text-xs"></div>
-                </div>
-
-                <div class="mb-6 global-card p-3">
-                    <h4 class="text-xs font-extrabold text-slate-700 mb-2 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v18"></path><path d="M12 2v20"></path><path d="M18 6h-8"></path><path d="M18 10h-8"></path><path d="M18 14h-8"></path><path d="M18 18h-8"></path><path d="M6 10h-2"></path><path d="M6 14h-2"></path><path d="M6 18h-2"></path></svg>
-                        실시간 뉴스 (최근 5개)
-                    </h4>
-                    <div id="realtime-news-list" class="space-y-1"></div>
-                </div>
-
-                <div class="mb-4 global-card p-3">
-                    <h4 class="text-xs font-extrabold text-slate-700 mb-2 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20v-4"></path></svg>
-                        애널리스트 보고서 (최근 5개)
-                    </h4>
-                    <div id="analyst-report-list" class="space-y-1"></div>
                 </div>
             </div>
 
-            <!-- Footer -->
-            <div class="flex-none p-3 border-t border-slate-50 bg-slate-100 rounded-b-xl grid grid-cols-1 gap-3">
-                <a id="dart-link" href="#" target="_blank" class="flex justify-center items-center py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition shadow-lg shadow-amber-200/50">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                    전자공시 (DART)
-                </a>
-                <a id="naver-talk-link" href="#" target="_blank" class="flex justify-center items-center py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-lg shadow-indigo-200/50">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                    네이버 종목토론방
-                </a>
+            <!-- 오른쪽: 순위 (1/3) -->
+            <div class="space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-700 h-[500px] flex flex-col">
+                    <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-700/50">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm"><i class="fa-solid fa-trophy text-yellow-500 mr-1"></i> 시가총액 순위</h3>
+                    </div>
+                    <div id="ranking-container" class="overflow-y-auto flex-1 p-2 space-y-1">
+                        <!-- 랭킹 리스트 -->
+                    </div>
+                </div>
             </div>
-        </aside>
+        </div>
     </main>
 
     <script>
-        /**
-         * [API 엔진] 실시간 가격 시뮬레이션 및 데이터 관리 (Git 강제 인식용 주석 추가 - Final Rework 2025.12.06_Git_Fix_Clean)
-         * 이 부분은 Vercel 배포 전까지 시뮬레이션 데이터를 반환하도록 설정되어 있었습니다.
-         * 이제 Vercel 서버리스 API를 호출하도록 코드가 수정되었습니다.
-         */
-        class StockApiService {
-            constructor() {
-                // 기본 데이터 세트 (서버 DB 대용)
-                this.initialDB = {
-                    global: [
-                        { name: 'KOSPI', value: 4023.74, change: -12.45, rate: -0.31, unit: 'P' },
-                        { name: 'KOSDAQ', value: 932.01, change: 3.59, rate: 0.39, unit: 'P' },
-                        { name: 'NASDAQ 선물', value: 20547.50, change: -10.00, rate: -0.05, unit: 'P' },
-                        { name: 'USD/KRW', value: 1472.09, change: 7.00, rate: 0.47, unit: 'KRW' },
-                        { name: 'Bitcoin', value: 98540, change: 1200, rate: 1.23, unit: 'USD' },
-                        { name: 'Silver(XAG/USD)', value: 30.55, change: -0.25, rate: -0.81, unit: 'USD/oz' }
-                    ],
-                    stocks: [
-                        // KOSPI Top 60
-                        { rank: 1, name: '삼성전자', code: '005930', market: 'KOSPI', price: 105100, change: 600, rate: 0.57, industry: '반도체' },
-                        { rank: 2, name: 'SK하이닉스', code: '000660', market: 'KOSPI', price: 542000, change: -10000, rate: -1.81, industry: '반도체' },
-                        { rank: 3, name: 'LG에너지솔루션', code: '373220', market: 'KOSPI', price: 442000, change: 2000, rate: 0.45, industry: '2차전지' },
-                        { rank: 4, name: '삼성바이오로직스', code: '207940', market: 'KOSPI', price: 980000, change: 15000, rate: 1.55, industry: '바이오' },
-                        { rank: 5, name: '현대차', code: '005380', market: 'KOSPI', price: 265000, change: -1000, rate: -0.38, industry: '자동차' },
-                        { rank: 6, name: '기아', code: '000270', market: 'KOSPI', price: 121000, change: 500, rate: 0.41, industry: '자동차' },
-                        { rank: 7, name: '셀트리온', code: '068270', market: 'KOSPI', price: 192000, change: -2000, rate: -1.03, industry: '바이오' },
-                        { rank: 8, name: 'KB금융', code: '105560', market: 'KOSPI', price: 82000, change: 1200, rate: 1.49, industry: '금융' },
-                        { rank: 9, name: 'NAVER', code: '035420', market: 'KOSPI', price: 195000, change: -1500, rate: -0.76, industry: '플랫폼' },
-                        { rank: 10, name: 'POSCO홀딩스', code: '005490', market: 'KOSPI', price: 455000, change: 4000, rate: 0.89, industry: '철강' },
-                        { rank: 11, name: '카카오', code: '035720', market: 'KOSPI', price: 52000, change: -500, rate: -0.95, industry: '플랫폼' },
-                        { rank: 12, name: '삼성SDI', code: '006400', market: 'KOSPI', price: 385000, change: 0, rate: 0.00, industry: '2차전지' },
-                        { rank: 13, name: 'LG화학', code: '051910', market: 'KOSPI', price: 390000, change: -3000, rate: -0.76, industry: '화학' },
-                        { rank: 14, name: '신한지주', code: '055550', market: 'KOSPI', price: 54000, change: 600, rate: 1.12, industry: '금융' },
-                        { rank: 15, name: '현대모비스', code: '012330', market: 'KOSPI', price: 245000, change: -1000, rate: -0.41, industry: '자동차' },
-                        { rank: 16, name: '포스코퓨처엠', code: '003670', market: 'KOSPI', price: 320000, change: 5000, rate: 1.59, industry: '2차전지' },
-                        { rank: 17, name: '하나금융지주', code: '086790', market: 'KOSPI', price: 62000, change: 800, rate: 1.31, industry: '금융' },
-                        { rank: 18, name: 'LG전자', code: '066570', market: 'KOSPI', price: 105000, change: -500, rate: -0.47, industry: 'IT가전' },
-                        { rank: 19, name: '삼성물산', code: '028260', market: 'KOSPI', price: 145000, change: 1000, rate: 0.69, industry: '지주사' },
-                        { rank: 20, name: '메리츠금융', code: '138040', market: 'KOSPI', price: 78000, change: 1500, rate: 1.96, industry: '금융' },
-                        { rank: 21, name: 'SK이노베이션', code: '096770', market: 'KOSPI', price: 115000, change: -1500, rate: -1.29, industry: '정유/화학' },
-                        { rank: 22, name: '한국전력', code: '015760', market: 'KOSPI', price: 21000, change: 100, rate: 0.48, industry: '유틸리티' },
-                        { rank: 23, name: '크래프톤', code: '259960', market: 'KOSPI', price: 295000, change: -3000, rate: -1.01, industry: '게임' },
-                        { rank: 24, name: 'KT&G', code: '033780', market: 'KOSPI', price: 92000, change: 500, rate: 0.55, industry: '음식료' },
-                        { rank: 25, name: '삼성생명', code: '032830', market: 'KOSPI', price: 89000, change: 1000, rate: 1.14, industry: '보험' },
-                        { rank: 26, name: 'HD현대중공업', code: '329180', market: 'KOSPI', price: 135000, change: 2500, rate: 1.89, industry: '조선' },
-                        { rank: 27, name: '삼성전기', code: '009150', market: 'KOSPI', price: 155000, change: -500, rate: -0.32, industry: 'IT부품' },
-                        { rank: 28, name: 'HMM', code: '011200', market: 'KOSPI', price: 18500, change: -200, rate: -1.07, industry: '해운' },
-                        { rank: 29, name: '두산에너빌리티', code: '034020', market: 'KOSPI', price: 19500, change: 300, rate: 1.56, industry: '기계' },
-                        { rank: 30, name: 'SK텔레콤', code: '017670', market: 'KOSPI', price: 54000, change: 200, rate: 0.37, industry: '통신' },
-                        { rank: 31, name: '우리금융지주', code: '316140', market: 'KOSPI', price: 15200, change: 100, rate: 0.66, industry: '금융' },
-                        { rank: 32, name: '기업은행', code: '024110', market: 'KOSPI', price: 13500, change: 50, rate: 0.37, industry: '금융' },
-                        { rank: 33, name: 'LG생활건강', code: '051900', market: 'KOSPI', price: 350000, change: -4000, rate: -1.13, industry: '화장품' },
-                        { rank: 34, name: 'S-Oil', code: '010950', market: 'KOSPI', price: 68000, change: -500, rate: -0.73, industry: '정유' },
-                        { rank: 35, name: '삼성화재', code: '000810', market: 'KOSPI', price: 315000, change: 3000, rate: 0.96, industry: '보험' },
-                        { rank: 36, name: '하이브', code: '352820', market: 'KOSPI', price: 210000, change: -2500, rate: -1.18, industry: '엔터' },
-                        { rank: 37, name: '고려아연', code: '010130', market: 'KOSPI', price: 520000, change: 4000, rate: 0.78, industry: '철강' },
-                        { rank: 38, name: 'KT', code: '030200', market: 'KOSPI', price: 38000, change: 300, rate: 0.80, industry: '통신' },
-                        { rank: 39, name: '대한항공', code: '003490', market: 'KOSPI', price: 24500, change: 200, rate: 0.82, industry: '항공' },
-                        { rank: 40, name: '카카오뱅크', code: '323410', market: 'KOSPI', price: 26500, change: -300, rate: -1.12, industry: '금융' },
-                        { rank: 41, name: 'SK', code: '034730', market: 'KOSPI', price: 165000, change: 1000, rate: 0.61, industry: '지주사' },
-                        { rank: 42, name: '한국조선해양', code: '009540', market: 'KOSPI', price: 112000, change: 1500, rate: 1.36, industry: '조선' },
-                        { rank: 43, name: '한화에어로스페이스', code: '012450', market: 'KOSPI', price: 195000, change: 4000, rate: 2.09, industry: '방산' },
-                        { rank: 44, name: '삼성에스디에스', code: '018260', market: 'KOSPI', price: 155000, change: -1000, rate: -0.64, industry: 'IT서비스' },
-                        { rank: 45, name: '엔씨소프트', code: '036570', market: 'KOSPI', price: 185000, change: -2000, rate: -1.07, industry: '게임' },
-                        { rank: 46, name: '아모레퍼시픽', code: '090430', market: 'KOSPI', price: 135000, change: -1500, rate: -1.10, industry: '화장품' },
-                        { rank: 47, name: 'LG이노텍', code: '011070', market: 'KOSPI', price: 235000, change: 1000, rate: 0.43, industry: 'IT부품' },
-                        { rank: 48, name: '한화솔루션', code: '009830', market: 'KOSPI', price: 28500, change: -300, rate: -1.04, industry: '화학' },
-                        { rank: 49, name: '롯데케미칼', code: '011170', market: 'KOSPI', price: 125000, change: -1000, rate: -0.79, industry: '화학' },
-                        { rank: 50, name: 'HD현대일렉트릭', code: '267260', market: 'KOSPI', price: 185000, change: 5000, rate: 2.78, industry: '기계' },
-                        { rank: 51, name: 'SK바이오팜', code: '326030', market: 'KOSPI', price: 92000, change: 1500, rate: 1.66, industry: '바이오' },
-                        { rank: 52, name: '현대제철', code: '004020', market: 'KOSPI', price: 33500, change: 100, rate: 0.30, industry: '철강' },
-                        { rank: 53, name: '넷마블', code: '251270', market: 'KOSPI', price: 58000, change: -500, rate: -0.85, industry: '게임' },
-                        { rank: 54, name: 'CJ제일제당', code: '097950', market: 'KOSPI', price: 310000, change: 2000, rate: 0.65, industry: '음식료' },
-                        { rank: 55, name: '강원랜드', code: '035250', market: 'KOSPI', price: 16500, change: 50, rate: 0.30, industry: '레저' },
-                        { rank: 56, name: '유한양행', code: '000100', market: 'KOSPI', price: 68000, change: 800, rate: 1.19, industry: '제약' },
-                        { rank: 57, name: '한미반도체', code: '042700', market: 'KOSPI', price: 145000, change: 4500, rate: 3.20, industry: '반도체' },
-                        { rank: 58, name: '금호석유', code: '011780', market: 'KOSPI', price: 142000, change: -1000, rate: -0.70, industry: '화학' },
-                        { rank: 59, name: '현대글로비스', code: '086280', market: 'KOSPI', price: 185000, change: 1000, rate: 0.54, industry: '물류' },
-                        { rank: 60, name: 'F&F', code: '383220', market: 'KOSPI', price: 72000, change: -500, rate: -0.69, industry: '의류' },
+        // === 설정 ===
+        const INDICES = [
+            { id: '^KS11', name: 'KOSPI' }, { id: '^KQ11', name: 'KOSDAQ' },
+            { id: 'NQ=F', name: 'NASDAQ' }, { id: 'KRW=X', name: 'USD/KRW' }
+        ];
+        const TOP_STOCKS = [
+            { code: '005930', name: '삼성전자' }, { code: '000660', name: 'SK하이닉스' },
+            { code: '373220', name: 'LG에너지' }, { code: '207940', name: '삼바' },
+            { code: '005380', name: '현대차' }, { code: '247540', name: '에코프로비엠' }
+        ];
+        let currentSymbol = '005930';
 
-                        // KOSDAQ Top 60
-                        { rank: 1, name: '에코프로비엠', code: '247540', market: 'KOSDAQ', price: 265000, change: 5000, rate: 1.92, industry: '2차전지' },
-                        { rank: 2, name: '알테오젠', code: '196170', market: 'KOSDAQ', price: 345000, change: 12000, rate: 3.60, industry: '바이오' },
-                        { rank: 3, name: '에코프로', code: '086520', market: 'KOSDAQ', price: 94100, change: 1100, rate: 1.27, industry: '2차전지' },
-                        { rank: 4, name: 'HLB', code: '028300', market: 'KOSDAQ', price: 82000, change: -1500, rate: -1.80, industry: '바이오' },
-                        { rank: 5, name: '리가켐바이오', code: '141080', market: 'KOSDAQ', price: 125000, change: 3000, rate: 2.46, industry: '바이오' },
-                        { rank: 6, name: '엔켐', code: '348370', market: 'KOSDAQ', price: 210000, change: -5000, rate: -2.33, industry: '2차전지' },
-                        { rank: 7, name: '휴젤', code: '145020', market: 'KOSDAQ', price: 285000, change: 2000, rate: 0.71, industry: '의료기기' },
-                        { rank: 8, name: '클래시스', code: '214150', market: 'KOSDAQ', price: 52000, change: 1500, rate: 2.97, industry: '의료기기' },
-                        { rank: 9, name: '리노공업', code: '058470', market: 'KOSDAQ', price: 245000, change: 4000, rate: 1.66, industry: '반도체' },
-                        { rank: 10, name: 'HPSP', code: '403870', market: 'KOSDAQ', price: 42000, change: -800, rate: -1.87, industry: '반도체' },
-                        { rank: 11, name: '레인보우로보틱스', code: '277810', market: 'KOSDAQ', price: 165000, change: 3500, rate: 2.17, industry: '로봇' },
-                        { rank: 12, name: '펄어비스', code: '263750', market: 'KOSDAQ', price: 38500, change: -500, rate: -1.28, industry: '게임' },
-                        { rank: 13, name: '셀트리온제약', code: '068760', market: 'KOSDAQ', price: 92000, change: -1000, rate: -1.08, industry: '제약' },
-                        { rank: 14, name: '삼천당제약', code: '000250', market: 'KOSDAQ', price: 145000, change: 2000, rate: 1.40, industry: '제약' },
-                        { rank: 15, name: '실리콘투', code: '257720', market: 'KOSDAQ', price: 42000, change: 1500, rate: 3.70, industry: '화장품' },
-                        { rank: 16, name: '솔브레인', code: '357780', market: 'KOSDAQ', price: 285000, change: -2000, rate: -0.70, industry: '반도체' },
-                        { rank: 17, name: 'JYP Ent.', code: '035900', market: 'KOSDAQ', price: 58000, change: -500, rate: -0.85, industry: '엔터' },
-                        { rank: 18, name: '이오테크닉스', code: '039030', market: 'KOSDAQ', price: 175000, change: 3000, rate: 1.74, industry: '반도체' },
-                        { rank: 19, name: '동진쎄미켐', code: '005290', market: 'KOSDAQ', price: 38000, change: 200, rate: 0.53, industry: '반도체' },
-                        { rank: 20, name: '원익IPS', code: '240810', market: 'KOSDAQ', price: 34500, change: 500, rate: 1.47, industry: '반도체' },
-                        { rank: 21, name: '카카오게임즈', code: '293490', market: 'KOSDAQ', price: 19500, change: -200, rate: -1.02, industry: '게임' },
-                        { rank: 22, name: '에스엠', code: '041510', market: 'KOSDAQ', price: 72000, change: -1000, rate: -1.37, industry: '엔터' },
-                        { rank: 23, name: '파마리서치', code: '214450', market: 'KOSDAQ', price: 185000, change: 4000, rate: 2.21, industry: '의료기기' },
-                        { rank: 24, name: 'CJ ENM', code: '035760', market: 'KOSDAQ', price: 78000, change: 500, rate: 0.65, industry: '미디어' },
-                        { rank: 25, name: '스튜디오드래곤', code: '253450', market: 'KOSDAQ', price: 42000, change: -300, rate: -0.71, industry: '미디어' },
-                        { rank: 26, name: '더블유씨피', code: '393890', market: 'KOSDAQ', price: 38000, change: -500, rate: -1.30, industry: '2차전지' },
-                        { rank: 27, name: '대주전자재료', code: '078600', market: 'KOSDAQ', price: 95000, change: 2000, rate: 2.15, industry: '2차전지' },
-                        { rank: 28, name: '나노신소재', code: '121600', market: 'KOSDAQ', price: 115000, change: 1500, rate: 1.32, industry: '2차전지' },
-                        { rank: 29, name: '제이앤티씨', code: '204270', market: 'KOSDAQ', price: 22000, change: 800, rate: 3.77, industry: 'IT부품' },
-                        { rank: 30, name: '피엔티', code: '137400', market: 'KOSDAQ', price: 54000, change: -500, rate: -0.92, industry: '2차전지' },
-                        { rank: 31, name: '에스티팜', code: '237690', market: 'KOSDAQ', price: 98000, change: 2000, rate: 2.08, industry: '바이오' },
-                        { rank: 32, name: '씨젠', code: '096530', market: 'KOSDAQ', price: 24500, change: 100, rate: 0.41, industry: '바이오' },
-                        { rank: 33, name: 'ISC', code: '095340', market: 'KOSDAQ', price: 78000, change: 1000, rate: 1.30, industry: '반도체' },
-                        { rank: 34, name: '티씨케이', code: '064760', market: 'KOSDAQ', price: 105000, change: -1000, rate: -0.94, industry: '반도체' },
-                        { rank: 35, name: '주성엔지니어링', code: '036930', market: 'KOSDAQ', price: 32000, change: 500, rate: 1.59, industry: '반도체' },
-                        { rank: 36, name: 'SOOP', code: '067160', market: 'KOSDAQ', price: 115000, change: -2000, rate: -1.71, industry: '플랫폼' },
-                        { rank: 37, name: '와이지엔터테인먼트', code: '122870', market: 'KOSDAQ', price: 38000, change: -500, rate: -1.30, industry: '엔터' },
-                        { rank: 38, name: '넥슨게임즈', code: '225570', market: 'KOSDAQ', price: 15500, change: 200, rate: 1.31, industry: '게임' },
-                        { rank: 39, name: '루닛', code: '328130', market: 'KOSDAQ', price: 48000, change: 1000, rate: 2.13, industry: '의료AI' },
-                        { rank: 40, name: 'HK이노엔', code: '195940', market: 'KOSDAQ', price: 42000, change: 500, rate: 1.20, industry: '제약' },
-                        { rank: 41, name: '휴온스', code: '243070', market: 'KOSDAQ', price: 32000, change: 100, rate: 0.31, industry: '제약' },
-                        { rank: 42, name: '에이비엘바이오', code: '298380', market: 'KOSDAQ', price: 34000, change: 800, rate: 2.41, industry: '바이오' },
-                        { rank: 43, name: '오스코텍', code: '039200', market: 'KOSDAQ', price: 38000, change: 500, rate: 1.33, industry: '바이오' },
-                        { rank: 44, name: '차바이오텍', code: '085660', market: 'KOSDAQ', price: 14500, change: -100, rate: -0.68, industry: '바이오' },
-                        { rank: 45, name: '메디톡스', code: '086900', market: 'KOSDAQ', price: 142000, change: -2000, rate: -1.39, industry: '바이오' },
-                        { rank: 46, name: '파크시스템스', code: '140860', market: 'KOSDAQ', price: 165000, change: 3000, rate: 1.85, industry: '반도체' },
-                        { rank: 47, name: '고영', code: '098460', market: 'KOSDAQ', price: 13500, change: 100, rate: 0.75, industry: '반도체' },
-                        { rank: 48, name: '심텍', code: '222800', market: 'KOSDAQ', price: 24000, change: -200, rate: -0.83, industry: '반도체' },
-                        { rank: 49, name: '하나마이크론', code: '067310', market: 'KOSDAQ', price: 18500, change: 300, rate: 1.65, industry: '반도체' },
-                        { rank: 50, name: '두산테스나', code: '131970', market: 'KOSDAQ', price: 38000, change: 500, rate: 1.33, industry: '반도체' },
-                        { rank: 51, name: '비에이치', code: '090460', market: 'KOSDAQ', price: 19500, change: 200, rate: 1.04, industry: 'IT부품' },
-                        { rank: 52, name: '엠로', code: '058970', market: 'KOSDAQ', price: 62000, change: 1000, rate: 1.64, industry: '소프트웨어' },
-                        { rank: 53, name: '카페24', code: '042000', market: 'KOSDAQ', price: 28000, change: -500, rate: -1.75, industry: '플랫폼' },
-                        { rank: 54, name: '아프리카TV', code: '067160', market: 'KOSDAQ', price: 105000, change: -1000, rate: -0.94, industry: '플랫폼' },
-                        { rank: 55, name: '위메이드', code: '112040', market: 'KOSDAQ', price: 42000, change: -1000, rate: -2.33, industry: '게임' },
-                        { rank: 56, name: '천보', code: '278280', market: 'KOSDAQ', price: 75000, change: -1500, rate: -1.96, industry: '2차전지' },
-                        { rank: 57, name: '성우하이텍', code: '015750', market: 'KOSDAQ', price: 8500, change: 50, rate: 0.59, industry: '자동차' },
-                        { rank: 58, name: '서진시스템', code: '178320', market: 'KOSDAQ', price: 26000, change: 500, rate: 1.96, industry: '통신장비' },
-                        { rank: 59, name: '인텔리안테크', code: '189300', market: 'KOSDAQ', price: 58000, change: 1000, rate: 1.75, industry: '통신장비' },
-                        { rank: 60, name: '제일엠앤에스', code: '456789', market: 'KOSDAQ', price: 18000, change: 200, rate: 1.12, industry: '2차전지' }
-                    ]
-                };
+        // === 유틸리티 ===
+        function formatNum(n) { return new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 2 }).format(n); }
+        function getColor(v) { return v > 0 ? 'text-red-500' : (v < 0 ? 'text-blue-500' : 'text-slate-500'); }
+
+        // === 탭 전환 ===
+        function switchTab(tab) {
+            document.getElementById('content-news').classList.toggle('hidden', tab !== 'news');
+            document.getElementById('content-community').classList.toggle('hidden', tab !== 'community');
+            document.getElementById('tab-news').classList.toggle('active', tab === 'news');
+            document.getElementById('tab-community').classList.toggle('active', tab === 'community');
+            
+            if(tab === 'community') fetchCommunity();
+        }
+
+        // === 데이터 로직 ===
+        async function fetchAllData() {
+            const sym = document.getElementById('symbol-input').value;
+            currentSymbol = sym;
+            
+            try {
+                const res = await fetch(`/api/info?symbol=${sym}`);
+                const data = await res.json();
+                renderMain(data);
+            } catch { renderMain(mockStock(sym)); }
+
+            if(document.getElementById('tab-community').classList.contains('active')) fetchCommunity();
+        }
+
+        async function fetchCommunity() {
+            const bestList = document.getElementById('best-community-list');
+            const latestList = document.getElementById('latest-community-list');
+            
+            if(isNaN(currentSymbol)) {
+                bestList.innerHTML = '<div class="text-center text-xs text-slate-400">지원하지 않는 종목입니다.</div>';
+                latestList.innerHTML = '';
+                return;
+            }
+
+            bestList.innerHTML = '<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin text-red-500"></i></div>';
+            latestList.innerHTML = '';
+            
+            try {
+                const res = await fetch(`/api/community?code=${currentSymbol}`);
+                const data = await res.json();
                 
-                // 시뮬레이터 DB
-                this.currentDB = JSON.parse(JSON.stringify(this.initialDB));
+                // 베스트글 렌더링
+                if(data.best && data.best.length > 0) {
+                    bestList.innerHTML = data.best.map(p => `
+                        <a href="${p.link}" target="_blank" class="block p-3 best-post-card rounded-r-lg hover:shadow-sm transition-all mb-2">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="font-bold text-sm text-slate-800 dark:text-white truncate flex-1 pr-2">
+                                    <span class="text-red-500 mr-1 text-xs">BEST</span>${p.title}
+                                </span>
+                            </div>
+                            <div class="flex gap-3 text-xs font-bold text-slate-600 dark:text-slate-400">
+                                <span><i class="fa-regular fa-eye mr-1"></i>${p.views}</span>
+                                <span class="text-red-500"><i class="fa-regular fa-thumbs-up mr-1"></i>${p.likes}</span>
+                                <span class="text-slate-400 font-normal ml-auto">${p.date.split(' ')[1] || p.date}</span>
+                            </div>
+                        </a>
+                    `).join('');
+                } else {
+                    bestList.innerHTML = '<div class="text-center py-2 text-xs text-slate-400">인기글을 집계 중입니다.</div>';
+                }
+
+                // 최신글 렌더링
+                if(data.latest && data.latest.length > 0) {
+                    latestList.innerHTML = data.latest.map(p => `
+                        <a href="${p.link}" target="_blank" class="block p-3 bg-slate-50 rounded-lg hover:bg-slate-100 border border-slate-100 dark:bg-slate-700 dark:border-slate-600">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="text-sm text-slate-700 dark:text-slate-200 truncate flex-1 pr-2">${p.title}</span>
+                            </div>
+                            <div class="flex gap-3 text-xs text-slate-400">
+                                <span>조회 ${p.views}</span>
+                                <span>공감 ${p.likes}</span>
+                                <span class="ml-auto">${p.date.split(' ')[1] || p.date}</span>
+                            </div>
+                        </a>
+                    `).join('');
+                }
+
+            } catch {
+                bestList.innerHTML = '<div class="text-center text-xs text-slate-400">로딩 실패</div>';
             }
+        }
 
-            simulateChange(currentPrice) {
-                let step;
-                if (currentPrice > 500000) step = 1000;
-                else if (currentPrice > 100000) step = 500;
-                else if (currentPrice > 50000) step = 100;
-                else if (currentPrice > 10000) step = 50;
-                else step = 10;
+        // === 렌더링 헬퍼 ===
+        function renderMain(data) {
+            document.getElementById('main-symbol').textContent = data.symbol;
+            document.getElementById('main-price').textContent = formatNum(data.price);
+            document.getElementById('main-price').className = `text-3xl font-bold dark:text-white ${getColor(data.change)}`;
+            document.getElementById('main-change').textContent = `${data.change>0?'+':''}${formatNum(data.change)} (${formatNum(data.change_percent)}%)`;
+            document.getElementById('main-change').className = `text-lg font-medium mb-1 ${getColor(data.change)}`;
+            document.getElementById('link-naver').href = !isNaN(data.symbol) ? `https://finance.naver.com/item/main.naver?code=${data.symbol}` : `https://finance.yahoo.com/quote/${data.symbol}`;
 
-                const direction = Math.random() > 0.45 ? 1 : -1; 
-                const magnitude = Math.floor(Math.random() * 3) + 1;
-                let changeAmount = step * magnitude * direction;
-
-                const newPrice = Math.max(100, currentPrice + changeAmount);
-                const changeRate = ((newPrice - currentPrice) / currentPrice) * 100;
-
-                return { newPrice, changeAmount, changeRate };
+            const newsBox = document.getElementById('content-news');
+            if(data.news && data.news.length) {
+                newsBox.innerHTML = data.news.map(n => `
+                    <a href="${n.link}" target="_blank" class="block p-3 bg-slate-50 rounded-lg hover:bg-slate-100 border border-slate-100 dark:bg-slate-700 dark:border-slate-600">
+                        <div class="font-bold text-sm text-slate-800 dark:text-white truncate">${n.title}</div>
+                        <div class="text-xs text-slate-400 mt-1">${n.publisher}</div>
+                    </a>
+                `).join('');
+            } else {
+                newsBox.innerHTML = '<div class="text-center py-4 text-xs text-slate-400">뉴스가 없습니다.</div>';
             }
+        }
 
-            async fetchGlobalData() {
-                // TODO: fetch('http://localhost:5000/api/global')
-                return new Promise(resolve => {
-                    setTimeout(() => {
-                        this.currentDB.global.forEach(item => {
-                            const fluc = (Math.random() - 0.5) * (item.value * 0.001);
-                            item.value += fluc;
-                        });
-                        resolve(this.currentDB.global);
-                    }, 200);
-                });
-            }
+        function mockStock(sym) { return { symbol: sym, price: 50000, change: 1000, change_percent: 2.0, news: [] }; }
 
-            async fetchStocks(marketFilter) {
-                // TODO: fetch(`http://localhost:5000/api/stocks?market=${marketFilter}`)
-                return new Promise(resolve => {
-                    setTimeout(() => {
-                        const data = this.currentDB.stocks.filter(s => 
-                            marketFilter === 'ALL' ? true : s.market === marketFilter
-                        );
-                        resolve(data);
-                    }, 200);
-                });
-            }
+        // === 초기화 ===
+        function init() {
+            if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
+            window.toggleDarkMode = () => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+            };
 
-            // [수정됨] 이제 서버에서 받은 모든 데이터(가격, 뉴스, 보고서)를 반환합니다.
-            async fetchRealtimePrice(code) {
-                // Vercel 서버리스 함수 엔드포인트: /api/realtime?code=...
-                // **경로 오류 방지를 위해 절대 경로 대신 상대 경로로 수정**
-                const PROXY_URL = `/api/realtime?code=${code}`;
-                
-                // --- 실제 API 호출 스위치 ON ---
+            const idxBox = document.getElementById('indices-container');
+            idxBox.innerHTML = INDICES.map(i => `
+                <div class="bg-white p-3 rounded-xl border border-slate-200 dark:bg-slate-800 dark:border-slate-700">
+                    <div class="text-xs text-slate-500 mb-1">${i.name}</div>
+                    <div class="font-bold text-sm dark:text-white" id="idx-p-${i.id}">-</div>
+                </div>
+            `).join('');
+
+            const rankBox = document.getElementById('ranking-container');
+            rankBox.innerHTML = TOP_STOCKS.map((s, i) => `
+                <div onclick="document.getElementById('symbol-input').value='${s.code}'; fetchAllData()" class="flex justify-between items-center p-2 hover:bg-slate-50 cursor-pointer rounded dark:hover:bg-slate-700">
+                    <div class="flex items-center gap-2">
+                        <span class="w-5 h-5 flex items-center justify-center ${i<3?'bg-yellow-400 text-white':'bg-slate-100 text-slate-500'} rounded text-xs font-bold">${i+1}</span>
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">${s.name}</span>
+                    </div>
+                    <div class="text-xs font-bold" id="rank-p-${s.code}">-</div>
+                </div>
+            `).join('');
+
+            const updateMini = async (s, idPrefix) => {
                 try {
-                    const res = await fetch(PROXY_URL);
-                    
-                    // Vercel 서버에서 Python이 503 오류를 반환했을 경우 (API 키 오류 등으로)
-                    if (res.status === 503 || res.status === 500 || res.status === 404) {
-                         // 서버 오류 시, 시뮬레이션 데이터를 반환하도록 강제 폴백
-                         console.error(`API Server returned ${res.status}. Falling back to simulation.`);
-                         throw new Error('API server failed with non-200 status');
+                    const res = await fetch(`/api/info?symbol=${s}`);
+                    const d = await res.json();
+                    const el = document.getElementById(`${idPrefix}-${s}`);
+                    if(el) {
+                        el.textContent = formatNum(d.price);
+                        el.className = `text-xs font-bold ${getColor(d.change)}`;
                     }
+                } catch {}
+            };
+            INDICES.forEach(i => updateMini(i.id, 'idx-p'));
+            TOP_STOCKS.forEach(s => updateMini(s.code, 'rank-p'));
 
-                    if (!res.ok) {
-                        console.error('API Server Error or not deployed:', res.status);
-                        throw new Error('API server failed');
-                    }
-                    const realData = await res.json();
-                    
-                    // 로컬 DB 업데이트 (그리드에 가격 반영용)
-                    const localStock = this.currentDB.stocks.find(s => s.code === code);
-                    
-                    if (localStock && realData.price && realData.change !== undefined && realData.rate !== undefined) {
-                        localStock.price = realData.price;
-                        localStock.change = realData.change;
-                        localStock.rate = realData.rate;
-                    } 
-                    
-                    // API에서 가져온 전체 데이터를 반환 (가격, 뉴스, 보고서 포함)
-                    return realData;
-
-                } catch (e) {
-                    console.error("Failed to fetch real data, falling back to simulation:", e);
-                    // 실패 시 시뮬레이션 데이터 반환 로직으로 대체
-                    
-                    // [기존 시뮬레이션 코드]
-                    return new Promise(resolve => {
-                        setTimeout(() => {
-                            const stock = this.currentDB.stocks.find(s => s.code === code);
-                            if(stock) {
-                                // 장 마감 시 가격 고정을 위해 시뮬레이션 로직 제거 (마지막 종가 유지)
-                                // stock.price와 stock.rate를 현재 값으로 유지
-                                // 뉴스/보고서 필드만 임시 데이터로 채움 (장 마감 시에는 업데이트 안 됨)
-                                resolve({
-                                    price: stock.price,
-                                    change: stock.change,
-                                    rate: stock.rate,
-                                    // 임시 뉴스 데이터 반환 (이전 뉴스 유지)
-                                    news: [{title: "시뮬레이션: 장 마감 뉴스를 불러올 수 없습니다.", link: "#", date: ""}],
-                                    reports: [{title: "시뮬레이션: 장 마감 보고서를 불러올 수 없습니다.", link: "#", date: ""}],
-                                    disclosure: []
-                                }); 
-                            }
-                        }, 100);
-                    });
-                }
-            }
-
-            updateTime() {
-                const now = new Date();
-                const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-                document.getElementById('last-updated').textContent = `Updated ${timeStr} (Git Fix)`; // Git 인식 강제
-            }
-            // ... (나머지 클래스 코드는 그대로 유지)
-            
-            // updateDetailPanel 함수는 그대로 유지
-            updateDetailPanel(stock) {
-                const elPrice = document.getElementById('detail-price');
-                const elChange = document.getElementById('detail-change');
-                const oldPrice = parseInt(elPrice.textContent.replace(/,/g, '')) || 0;
-                
-                // API에서 price, rate, change 필드를 사용합니다.
-                const isUp = stock.rate > 0;
-                const color = isUp ? 'text-up' : 'text-down';
-                
-                // 가격 변동 시 배경색 깜빡임 효과
-                if(stock.price !== oldPrice) {
-                    const box = document.getElementById('price-container');
-                    // 이전 애니메이션 클래스 제거 후 재적용
-                    box.classList.remove('flash-up', 'flash-down');
-                    void box.offsetWidth; // trigger reflow
-                    box.classList.add(stock.price > oldPrice ? 'flash-up' : 'flash-down');
-                }
-
-                elPrice.className = `text-3xl font-black num-font ${color}`;
-                elPrice.textContent = stock.price.toLocaleString();
-                
-                elChange.className = `text-md font-bold num-font ${color}`;
-                elChange.textContent = `${stock.change > 0 ? '▲' : '▼'} ${Math.abs(stock.change).toLocaleString()}`;
-                
-                const elRate = document.getElementById('detail-rate');
-                elRate.className = `px-2 py-0.5 rounded text-[10px] font-bold num-font ${isUp ? 'bg-up' : 'bg-down'}`;
-                elRate.textContent = `${stock.rate}%`;
-
-                const low = stock.price * 0.98;
-                const high = stock.price * 1.02;
-                const percent = Math.max(0, Math.min(100, ((stock.price - low) / (high - low)) * 100));
-                document.getElementById('sim-low').textContent = Math.floor(low).toLocaleString();
-                document.getElementById('sim-high').textContent = Math.floor(high).toLocaleString();
-                document.getElementById('price-dot').style.left = `${percent}%`;
-            }
-            
-            //... (나머지 클래스 코드는 그대로 유지)
+            fetchAllData(); 
         }
-
-        class DashboardApp {
-            constructor() {
-                this.api = new StockApiService();
-                this.state = {
-                    currentMarket: 'KOSDAQ',
-                    activeCode: null,
-                    chartPeriod: 'DAY',
-                    stocks: []
-                };
-                this.updateTimer = null;
-            }
-
-            async init() {
-                this.updateTime();
-                setInterval(() => this.updateTime(), 60000);
-                
-                await this.refreshData();
-                this.startLiveUpdate(); // 라이브 모드 시작
-            }
-
-            updateTime() {
-                const now = new Date();
-                const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-                // Git 인식을 강제하기 위한 수정: 시간 표시 옆에 (Git Fix) 추가
-                document.getElementById('last-updated').textContent = `Updated ${timeStr} (Git Fix)`; 
-            }
-
-            async refreshData() {
-                document.getElementById('loading-overlay').classList.remove('hidden');
-                const [global, stocks] = await Promise.all([
-                    this.api.fetchGlobalData(),
-                    this.api.fetchStocks(this.state.currentMarket)
-                ]);
-                
-                this.renderGlobal(global);
-                this.state.stocks = stocks;
-                this.renderGrid(); // 그룹화된 그리드 렌더링 호출
-                
-                if(!this.state.activeCode && stocks.length > 0) {
-                    this.selectStock(stocks[0].code);
-                }
-                document.getElementById('loading-overlay').classList.add('hidden');
-            }
-
-            // [수정됨] 실시간 가격 업데이트 루프: 뉴스 및 보고서 렌더링 추가
-            startLiveUpdate() {
-                if(this.updateTimer) clearInterval(this.updateTimer);
-                this.updateTimer = setInterval(async () => {
-                    if(this.state.activeCode) {
-                        const realData = await this.api.fetchRealtimePrice(this.state.activeCode);
-                        
-                        // API 호출이 실패하고 시뮬레이션 데이터(가격만 있는)가 반환된 경우 처리
-                        if (realData.price === undefined) {
-                            // 시뮬레이션 데이터로 가격만 업데이트
-                            this.updateDetailPanel(realData); 
-                            this.updateGridItem(realData);
-                            // 뉴스/보고서는 업데이트하지 않음 (이전 데이터를 유지하거나 초기 상태 유지)
-                            return; 
-                        }
-
-                        // API 성공 시: 가격 업데이트
-                        this.updateDetailPanel(realData); 
-                        this.updateGridItem(realData);
-                        
-                        // API 성공 시: 뉴스, 보고서, 공시 업데이트 (Naver API 연동)
-                        this.renderDisclosure(realData.disclosure || []);
-                        this.renderNews(realData.news || []);
-                        this.renderReports(realData.reports || []);
-
-                    }
-                }, 2000); // 2초 주기
-            }
-
-            updateGridItem(stock) {
-                // 화면에 보이는 해당 종목 카드만 콕 집어서 업데이트 (성능 최적화)
-                const card = document.querySelector(`.stock-item[onclick="app.selectStock('${stock.code}')"]`);
-                if(card) {
-                    const priceEl = card.querySelector('.stock-price');
-                    const rateEl = card.querySelector('.stock-rate');
-                    if(priceEl) priceEl.textContent = stock.price.toLocaleString();
-                    if(rateEl) {
-                        const isUp = stock.rate > 0;
-                        rateEl.textContent = `${stock.rate}%`;
-                        rateEl.className = `stock-rate text-sm font-bold ${isUp ? 'text-up' : 'text-down'}`;
-                    }
-                }
-            }
-
-            setFilter(market) {
-                this.state.currentMarket = market;
-                this.updateFilterUI();
-                this.refreshData();
-            }
-
-            updateFilterUI() {
-                ['all', 'kospi', 'kosdaq'].forEach(m => {
-                    const btn = document.getElementById(`filter-${m}`);
-                    const active = m === this.state.currentMarket.toLowerCase();
-                    btn.className = `px-3 py-1.5 text-xs font-bold rounded-md transition-all ${active ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-200'}`;
-                });
-            }
-
-            // [수정됨] 종목 선택 시 리스트 초기화 로직 추가
-            selectStock(code) {
-                this.state.activeCode = code;
-                const stock = this.state.stocks.find(s => s.code === code);
-                
-                // 기존 active 클래스 제거 및 추가
-                document.querySelectorAll('.stock-item').forEach(el => el.classList.remove('active'));
-                const card = document.querySelector(`.stock-item[onclick="app.selectStock('${code}')"]`);
-                if(card) card.classList.add('active');
-                
-                if(stock) {
-                    document.getElementById('detail-name').textContent = stock.name;
-                    document.getElementById('detail-code').textContent = stock.code;
-                    document.getElementById('detail-industry').textContent = stock.industry;
-                    document.getElementById('detail-badge').textContent = stock.market;
-                    
-                    this.updateDetailPanel(stock);
-                    this.renderChartPlaceholder(stock);
-                    
-                    document.getElementById('dart-link').href = `https://dart.fss.or.kr/dsac001/main.do?&textCrpNm=${encodeURIComponent(stock.name)}`;
-                    document.getElementById('naver-talk-link').href = `https://finance.naver.com/item/board.naver?code=${stock.code}`;
-                    
-                    // 종목 변경 시 뉴스/보고서 목록을 로딩 상태로 초기화
-                    this.renderDisclosure(null);
-                    this.renderNews(null);
-                    this.renderReports(null);
-                }
-            }
-
-            updateDetailPanel(stock) {
-                const elPrice = document.getElementById('detail-price');
-                const elChange = document.getElementById('detail-change');
-                const oldPrice = parseInt(elPrice.textContent.replace(/,/g, '')) || 0;
-                
-                // API에서 price, rate, change 필드를 사용합니다.
-                const isUp = stock.rate > 0;
-                const color = isUp ? 'text-up' : 'text-down';
-                
-                // 가격 변동 시 배경색 깜빡임 효과
-                if(stock.price !== oldPrice) {
-                    const box = document.getElementById('price-container');
-                    // 이전 애니메이션 클래스 제거 후 재적용
-                    box.classList.remove('flash-up', 'flash-down');
-                    void box.offsetWidth; // trigger reflow
-                    box.classList.add(stock.price > oldPrice ? 'flash-up' : 'flash-down');
-                }
-
-                elPrice.className = `text-3xl font-black num-font ${color}`;
-                elPrice.textContent = stock.price.toLocaleString();
-                
-                elChange.className = `text-md font-bold num-font ${color}`;
-                elChange.textContent = `${stock.change > 0 ? '▲' : '▼'} ${Math.abs(stock.change).toLocaleString()}`;
-                
-                const elRate = document.getElementById('detail-rate');
-                elRate.className = `px-2 py-0.5 rounded text-[10px] font-bold num-font ${isUp ? 'bg-up' : 'bg-down'}`;
-                elRate.textContent = `${stock.rate}%`;
-
-                const low = stock.price * 0.98;
-                const high = stock.price * 1.02;
-                const percent = Math.max(0, Math.min(100, ((stock.price - low) / (high - low)) * 100));
-                document.getElementById('sim-low').textContent = Math.floor(low).toLocaleString();
-                document.getElementById('sim-high').textContent = Math.floor(high).toLocaleString();
-                document.getElementById('price-dot').style.left = `${percent}%`;
-            }
-
-            // [새로운 함수] 공시 정보 렌더링
-            renderDisclosure(data) {
-                const container = document.getElementById('daily-disclosure-list');
-                if (!data || data.length === 0) {
-                    container.innerHTML = `<p class="text-xs text-slate-400">데이터를 불러오는 중이거나, 당일 중요 공시 사항 없음.</p>`;
-                    return;
-                }
-                container.innerHTML = data.map(item => `
-                    <div class="truncate">
-                        <a href="${item.link}" target="_blank" class="text-red-600 hover:underline hover:text-red-700 font-medium">${item.title}</a>
-                        <span class="text-[10px] text-slate-400 ml-1">${item.date || ''}</span>
-                    </div>
-                `).join('');
-            }
-
-            // [새로운 함수] 뉴스 리스트 렌더링
-            renderNews(data) {
-                const container = document.getElementById('realtime-news-list');
-                if (!data || data.length === 0) {
-                    container.innerHTML = `<p class="text-xs text-slate-400">데이터를 불러오는 중이거나, 실시간 뉴스를 불러올 수 없습니다.</p>`;
-                    return;
-                }
-                container.innerHTML = data.map(item => `
-                    <div class="text-xs text-slate-700 truncate">
-                        <a href="${item.link}" target="_blank" class="hover:underline">${item.title}</a>
-                        <span class="text-[10px] text-slate-400 ml-1">${item.date}</span>
-                    </div>
-                `).join('');
-            }
-            
-            // [새로운 함수] 보고서 리스트 렌더링
-            renderReports(data) {
-                const container = document.getElementById('analyst-report-list');
-                if (!data || data.length === 0) {
-                    container.innerHTML = `<p class="text-xs text-slate-400">데이터를 불러오는 중이거나, 최근 애널리스트 보고서 없음.</p>`;
-                    return;
-                }
-                container.innerHTML = data.map(item => `
-                    <div class="text-xs text-slate-700 truncate">
-                        <a href="${item.link}" target="_blank" class="hover:underline">${item.title}</a>
-                        <span class="text-[10px] text-slate-400 ml-1">${item.date}</span>
-                    </div>
-                `).join('');
-            }
-
-            renderGlobal(data) {
-                const container = document.getElementById('global-stats');
-                container.innerHTML = data.map(item => {
-                    const isUp = item.change > 0;
-                    const color = isUp ? 'text-up' : 'text-down';
-                    return `
-                        <div class="global-card">
-                            <div class="text-[10px] font-bold text-slate-500 mb-0.5 truncate">${item.name}</div>
-                            <div class="flex items-end justify-between">
-                                <span class="text-sm font-black text-slate-800 num-font">${item.value.toLocaleString()}</span>
-                                <div class="text-right leading-none">
-                                    <span class="text-[10px] font-bold ${color}">${item.change > 0 ? '+' : ''}${item.change.toLocaleString(undefined, { minimumFractionDigits: item.change % 1 !== 0 ? 2 : 0, maximumFractionDigits: 2 })}</span>
-                                    <br>
-                                    <span class="text-[10px] font-bold ${color} opacity-80">${item.rate}%</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            // [복원된 기능] 섹터별 그룹화 그리드 렌더링
-            renderGrid() {
-                const container = document.getElementById('industry-grid');
-                
-                // 1. 데이터를 산업(Industry)별로 그룹화
-                const grouped = this.state.stocks.reduce((acc, stock) => {
-                    const k = stock.industry;
-                    if (!acc[k]) acc[k] = [];
-                    acc[k].push(stock);
-                    return acc;
-                }, {});
-
-                // 2. 그룹별 카드 생성
-                container.innerHTML = Object.keys(grouped).map(industry => {
-                    const stocks = grouped[industry];
-                    const market = stocks[0].market;
-                    const icon = this.getIndustryIcon(industry); // 아이콘 헬퍼 사용
-
-                    // 각 산업 내 종목 리스트 생성
-                    const itemsHtml = stocks.map(stock => {
-                        const isUp = stock.rate > 0;
-                        const colorClass = isUp ? 'text-up' : 'text-down';
-                        const active = this.state.activeCode === stock.code ? 'active' : '';
-                        
-                        // 뱃지 로직
-                        let badgeClass = 'badge-default';
-                        let badgeText = `Rank ${stock.rank}`;
-                        if (stock.rank <= 3) { badgeClass = 'badge-red'; badgeText = '🔥 Top 3'; }
-                        else if (stock.rank <= 10) { badgeClass = 'badge-top10'; badgeText = '🚀 Top 10'; }
-                        else if (stock.rank <= 20) { badgeClass = 'badge-top20'; badgeText = '🌟 Top 20'; }
-                        else if (stock.rank <= 30) { badgeClass = 'badge-top30'; badgeText = '✨ Top 30'; }
-
-                        const marketAbbr = stock.market === 'KOSPI' ? '(K)' : '(Q)';
-
-                        // 시총 계산 (대략적)
-                        const cap = (stock.price * (100 - stock.rank) * 10000 / 1000000000000).toFixed(1);
-
-                        return `
-                            <div class="stock-item ${active}" onclick="app.selectStock('${stock.code}')">
-                                <div class="flex flex-col space-y-1">
-                                    <div class="flex items-start justify-between">
-                                        <span class="text-sm font-bold text-slate-800 truncate leading-snug">${stock.name}${marketAbbr}</span>
-                                        <span class="rank-badge-top ${badgeClass} text-[10px] font-extrabold">${badgeText}</span>
-                                    </div>
-                                    <div class="flex flex-col">
-                                        <!-- 가격 업데이트를 위해 클래스 추가: stock-price -->
-                                        <span class="stock-price text-xl font-black num-font text-slate-900 leading-tight">${stock.price.toLocaleString()}</span>
-                                        <span class="text-[10px] font-medium text-slate-500 whitespace-nowrap mt-0.5">시총: ${cap}조원</span>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <!-- 등락률 업데이트를 위해 클래스 추가: stock-rate -->
-                                        <span class="stock-rate text-sm font-bold ${colorClass} num-font">${stock.rate}%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-
-                    // 산업 카드 래퍼 반환
-                    return `
-                        <div class="main-section-card overflow-hidden">
-                            <div class="bg-white px-4 py-3 border-b border-slate-100 flex justify-between items-center rounded-t-xl">
-                                <h3 class="text-sm font-extrabold text-slate-800 flex items-center">
-                                    ${icon}
-                                    <span>${industry} (${market})</span>
-                                    <span class="text-xs font-semibold text-slate-500 ml-2">(${stocks.length}개)</span>
-                                </h3>
-                            </div>
-                            <div class="p-3 grid grid-cols-2 gap-3 bg-gray-50">
-                                ${itemsHtml}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-                // 그리드 레이아웃 설정 복원 (단순 grid가 아닌 카드들의 나열)
-                container.className = "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3";
-            }
-
-            // [복원된 기능] 산업 아이콘 헬퍼
-            getIndustryIcon(industry) {
-                const h = "h-6 w-6 sector-icon"; 
-                const stroke = "stroke-2.5";
-                
-                // 주요 섹터 아이콘 매핑
-                if(industry === '반도체' || industry === 'IT부품' || industry === 'IT가전' || industry === 'IT서비스') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-indigo-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h10"/><path d="M7 17h10"/><path d="M7 12h10"/><path d="M12 7v10"/></svg>`;
-                if(industry === '2차전지') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="12" rx="2"/><path d="M21 6H3"/><path d="M12 14v-4l-3 4h6"/></svg>`;
-                if(industry.includes('바이오') || industry.includes('제약') || industry.includes('의료AI') || industry.includes('의료기기')) return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-pink-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2M14 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2M18 7.5L14 12l4 4.5M6 7.5L10 12l-4 4.5"/></svg>`;
-                if(industry === '자동차') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14s.5 2.5 2.5 2.5c2 0 4.5-2.5 4.5-2.5s-2.5-4.5-4.5-4.5c-2 0-2.5 2.5-2.5 2.5z"/><path d="M12 14l-4 4"/><circle cx="12" cy="12" r="10"/></svg>`;
-                if(industry === '금융' || industry === '보험') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-green-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M18 13.5l-6-3-6 3"/><path d="M12 6.5L6 9.5m6-3l6 3"/><rect x="3" y="16" width="6" height="4" rx="1"/><rect x="15" y="16" width="6" height="4" rx="1"/></svg>`;
-                if(industry === '플랫폼' || industry === '게임' || industry === '미디어' || industry === '엔터') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-orange-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12h4"/><path d="M8 10v4"/><path d="M15 11h2"/><path d="M16 10v4"/><rect x="2" y="4" width="20" height="16" rx="7"/></svg>`;
-                if(industry === '철강' || industry.includes('화학') || industry.includes('정유')) return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M6 20v-4"/><path d="M18 20v-4"/><path d="M12 20v-8"/><path d="M4 16v-2c0-1.1.9-2 2-2h12c1.1 0 2 .9 2 2v2"/><path d="M9 12h6"/><path d="M15 12V6c0-1.1-.9-2-2-2h-2c-1.1 0-2 .9-2 2v6"/></svg>`;
-                if(industry === '조선' || industry === '해운' || industry === '항공' || industry === '물류') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M8 12h8"/><path d="M6 16l-3-4h18l-3 4z"/><path d="M10 8l2-4 2 4"/></svg>`;
-                if(industry === '기계' || industry === '방산') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-red-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.4 1.4 0 0 0-.8-2.6l-3.2-1.2v-3.2a1.4 1.4 0 0 0-2.6-.8l-1.2 3.2H7.6a1.4 1.4 0 0 0-.8 2.6l3.2 1.2v3.2a1.4 1.4 0 0 0 2.6.8l1.2-3.2h3.2a1.4 1.4 0 0 0 .8-2.6z"/></svg>`;
-                if(industry === '음식료' || industry === '화장품' || industry === '의류') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-lime-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.38a2 2 0 0 0 2-1.58L23 6H6"/></svg>`;
-                if(industry === '유틸리티') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-yellow-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
-                if(industry === '지주사') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="12" rx="2"/><line x1="12" y1="2" x2="12" y2="10"/><line x1="7" y1="14" x2="7" y2="18"/><line x1="17" y1="14" x2="17" y2="18"/></svg>`;
-                if(industry === '레저') return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-cyan-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
-
-                return `<svg xmlns="http://www.w3.org/2000/svg" class="${h} mr-2 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>`;
-            }
-
-            renderChartPlaceholder(stock) {
-                 // 차트 기간 설정 로직 (생략 - UI만 유지)
-            }
-            setChartPeriod(period) {
-                // UI 갱신만
-                document.querySelectorAll('.chart-button').forEach(b => b.classList.remove('active'));
-                document.getElementById(`chart-${period.toLowerCase()}`).classList.add('active');
-            }
-        }
-
-        const app = new DashboardApp();
-        app.init();
+        
+        init();
     </script>
 </body>
 </html>

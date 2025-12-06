@@ -81,6 +81,8 @@
         .border-sector-cyan { border-color: #06b6d4; }
         .border-sector-pink { border-color: #ec4899; }
         .border-sector-teal { border-color: #14b8a6; }
+        .border-sector-violet { border-color: #7c3aed; } /* New color for new sectors */
+        .border-sector-fuchsia { border-color: #d946ef; } /* New color for new sectors */
         
         /* 상승/하락에 따른 트레맵 카드 배경 강조 (미세한 그라디언트) */
         .bg-gradient-positive { background: linear-gradient(135deg, #fef2f2 5%, #fff 50%); }
@@ -92,6 +94,12 @@
         .proportional-basket-stocks {
             max-height: none; /* 최대 높이 제한 제거 */
             overflow-y: visible; /* 스크롤바 제거 */
+        }
+        
+        /* Dynamic Treemap Style */
+        .treemap-basket {
+            min-height: 120px; /* 최소 높이 보장 */
+            transition: all 0.3s ease-out; /* 동적 크기 변화 부드럽게 */
         }
         
     </style>
@@ -439,58 +447,20 @@
                 { code: '004700', name: '신성델타테크', change: 5.16, price: 63200, market: 'KOSDAQ', cap: 17370, rank: 43 },
                 { code: '347470', name: '서진시스템', change: 2.41, price: 25500, market: 'KOSDAQ', cap: 14352, rank: 57 },
             ],
-            '제약/바이오 성장': [ 
+            // 기존 '제약/바이오 성장' 분리
+            'ADC/mRNA 바이오': [ 
                 { code: '196170', name: '알테오젠', change: -12.04, price: 456500, market: 'KOSDAQ', cap: 244254, rank: 1 },
                 { code: '298380', name: '에이비엘바이오', change: -5.17, price: 190600, market: 'KOSDAQ', cap: 105069, rank: 4 },
                 { code: '141080', name: '리가켐바이오', change: -5.41, price: 185500, market: 'KOSDAQ', cap: 67912, rank: 6 },
                 { code: '310960', name: '코오롱티슈진', change: -2.56, price: 80000, market: 'KOSDAQ', cap: 66577, rank: 7 },
                 { code: '199800', name: '펩트론', change: 1.60, price: 285000, market: 'KOSDAQ', cap: 66454, rank: 8 },
                 { code: '088520', name: 'HLB', change: 1.66, price: 49100, market: 'KOSDAQ', cap: 64730, rank: 9 },
-                { code: '000250', name: '삼천당제약', change: -3.36, price: 216000, market: 'KOSDAQ', cap: 50668, rank: 10 },
-                { code: '348390', name: '보로노이', change: 2.59, price: 238000, market: 'KOSDAQ', cap: 43776, rank: 12 },
-                { code: '347470', name: '디앤디파마텍', change: -0.72, price: 95900, market: 'KOSDAQ', cap: 41645, rank: 14 },
-                { code: '214370', name: '케어젠', change: -1.09, price: 72900, market: 'KOSDAQ', cap: 39158, rank: 16 },
-                { code: '453360', name: '에임드바이오', change: 30.00, price: 57200, market: 'KOSDAQ', cap: 36697, rank: 17 },
-                { code: '068760', name: '셀트리온제약', change: -0.16, price: 62000, market: 'KOSDAQ', cap: 27083, rank: 22 },
-                { code: '140410', name: '메지온', change: 2.17, price: 84800, market: 'KOSDAQ', cap: 25749, rank: 23 },
-                { code: '237690', name: '에스티팜', change: 0.08, price: 118000, market: 'KOSDAQ', cap: 24428, rank: 27 },
-                { code: '226330', name: '올릭스', change: -2.13, price: 119600, market: 'KOSDAQ', cap: 24057, rank: 29 },
-                { code: '079580', name: '오스코텍', change: -7.18, price: 56900, market: 'KOSDAQ', cap: 21769, rank: 33 },
-                { code: '344830', name: '오름테라퓨틱', change: 0.61, price: 82200, market: 'KOSDAQ', cap: 17392, rank: 42 },
-                { code: '446270', name: '큐리옥스바이오시스템즈', change: 1.33, price: 91700, market: 'KOSDAQ', cap: 15668, rank: 48 },
-                { code: '298380', name: 'HK이노엔', change: -1.90, price: 51600, market: 'KOSDAQ', cap: 14618, rank: 54 },
-                { code: '141080', name: '네이처셀', change: 0.45, price: 22350, market: 'KOSDAQ', cap: 14401, rank: 56 },
-                { code: '32550', name: '젬백스', change: 4.16, price: 32550, market: 'KOSDAQ', cap: 13798, rank: 60 },
             ],
-            '반도체 소부장/장비': [ 
-                { code: '058470', name: '리노공업', change: 0.46, price: 65400, market: 'KOSDAQ', cap: 49843, rank: 11 },
-                { code: '039030', name: '이오테크닉스', change: 2.52, price: 285000, market: 'KOSDAQ', cap: 35111, rank: 19 },
-                { code: '240810', name: '원익IPS', change: 1.31, price: 61800, market: 'KOSDAQ', cap: 30334, rank: 20 },
-                { code: '403870', name: 'HPSP', change: -0.82, price: 30300, market: 'KOSDAQ', cap: 25300, rank: 25 },
-                { code: '095340', name: 'ISC', change: -0.73, price: 109500, market: 'KOSDAQ', cap: 23211, rank: 31 },
-                { code: '036930', name: '솔브레인', change: -0.73, price: 271500, market: 'KOSDAQ', cap: 21119, rank: 35 },
-                { code: '005690', name: '동진쎄미켐', change: 0.27, price: 36850, market: 'KOSDAQ', cap: 18946, rank: 36 },
-                { code: '057080', name: '유진테크', change: 0.26, price: 77000, market: 'KOSDAQ', cap: 17645, rank: 40 },
-                { code: '089030', name: '테크윙', change: 3.41, price: 47050, market: 'KOSDAQ', cap: 17434, rank: 41 },
-                { code: '064760', name: '티씨케이', change: 1.80, price: 147000, market: 'KOSDAQ', cap: 17162, rank: 44 },
-                { code: '170920', name: '하나마이크론', change: 3.69, price: 25300, market: 'KOSDAQ', cap: 16794, rank: 46 },
-                { code: '344830', name: '파크시스템스', change: 0.67, price: 225000, market: 'KOSDAQ', cap: 15742, rank: 47 },
-                { code: '47600', name: '태성', change: 1.60, price: 47600, market: 'KOSDAQ', cap: 14518, rank: 55 },
-                { code: '29250', name: '주성엔지니어링', change: -0.85, price: 29250, market: 'KOSDAQ', cap: 13826, rank: 59 },
-            ],
-            '의료기기/헬스케어': [ 
+            '미용/피부 의료기기/에스테틱': [
                 { code: '214450', name: '파마리서치', change: -2.31, price: 401500, market: 'KOSDAQ', cap: 41714, rank: 13 },
                 { code: '214150', name: '클래시스', change: 0.36, price: 55300, market: 'KOSDAQ', cap: 36225, rank: 18 },
                 { code: '223000', name: '휴젤', change: 0.90, price: 223000, market: 'KOSDAQ', cap: 27438, rank: 21 },
                 { code: '298380', name: '엘앤씨바이오', change: 5.04, price: 68800, market: 'KOSDAQ', cap: 16938, rank: 45 },
-                { code: '098460', name: '고영', change: -3.92, price: 26950, market: 'KOSDAQ', cap: 18502, rank: 37 },
-                { code: '247540', name: '씨어스테크놀로지', change: -3.11, price: 118400, market: 'KOSDAQ', cap: 14996, rank: 52 },
-            ],
-            '게임/엔터테인먼트': [ 
-                { code: '263750', name: '펄어비스', change: -0.13, price: 38650, market: 'KOSDAQ', cap: 24832, rank: 26 },
-                { code: '357340', name: 'JYP Ent.', change: 1.03, price: 68400, market: 'KOSDAQ', cap: 24304, rank: 28 },
-                { code: '041190', name: '에스엠', change: 0.58, price: 104400, market: 'KOSDAQ', cap: 23902, rank: 30 },
-                { code: '196170', name: '카카오게임즈', change: 0.18, price: 16710, market: 'KOSDAQ', cap: 15003, rank: 51 },
             ],
             '로봇/자동화': [ 
                 { code: '277810', name: '레인보우로보틱스', change: -7.20, price: 438500, market: 'KOSDAQ', cap: 85068, rank: 5 },
@@ -499,12 +469,32 @@
                 { code: '086520', name: '에스피지', change: 2.78, price: 66600, market: 'KOSDAQ', cap: 14770, rank: 53 },
                 { code: '44700', name: '삼현', change: 7.71, price: 44700, market: 'KOSDAQ', cap: 14173, rank: 58 },
             ],
-            'IT 부품/기타소비재': [ 
-                { code: '291880', name: '실리콘투', change: -1.88, price: 41850, market: 'KOSDAQ', cap: 25600, rank: 24 },
-                { code: '007390', name: '원익홀딩스', change: 2.16, price: 28350, market: 'KOSDAQ', cap: 21897, rank: 32 },
-                { code: '222800', name: '심텍', change: 7.48, price: 57500, market: 'KOSDAQ', cap: 21246, rank: 34 },
+            '반도체 소부장/장비': [ 
+                { code: '058470', name: '리노공업', change: 0.46, price: 65400, market: 'KOSDAQ', cap: 49843, rank: 11 },
+                { code: '039030', name: '이오테크닉스', change: 2.52, price: 285000, market: 'KOSDAQ', cap: 35111, rank: 19 },
+                { code: '240810', name: '원익IPS', change: 1.31, price: 61800, market: 'KOSDAQ', cap: 30334, rank: 20 },
+                { code: '403870', name: 'HPSP', change: -0.82, price: 30300, market: 'KOSDAQ', cap: 25300, rank: 25 },
+                { code: '095340', name: 'ISC', change: -0.73, price: 109500, market: 'KOSDAQ', cap: 23211, rank: 31 },
+                { code: '036930', name: '솔브레인', change: -0.73, price: 271500, market: 'KOSDAQ', cap: 21119, rank: 35 },
+            ],
+            // 기존 'IT 부품/기타소비재' 분리
+            '첨단 IT 부품/장비': [ 
+                { code: '057080', name: '유진테크', change: 0.26, price: 77000, market: 'KOSDAQ', cap: 17645, rank: 40 },
+                { code: '089030', name: '테크윙', change: 3.41, price: 47050, market: 'KOSDAQ', cap: 17434, rank: 41 },
+                { code: '064760', name: '티씨케이', change: 1.80, price: 147000, market: 'KOSDAQ', cap: 17162, rank: 44 },
+                { code: '170920', name: '하나마이크론', change: 3.69, price: 25300, market: 'KOSDAQ', cap: 16794, rank: 46 },
+                { code: '344830', name: '파크시스템스', change: 0.67, price: 225000, market: 'KOSDAQ', cap: 15742, rank: 47 },
+                { code: '005690', name: '동진쎄미켐', change: 0.27, price: 36850, market: 'KOSDAQ', cap: 18946, rank: 36 },
                 { code: '224020', name: 'LS마린솔루션', change: 4.73, price: 29900, market: 'KOSDAQ', cap: 15619, rank: 49 },
             ],
+            '게임/엔터테인먼트/콘텐츠': [ 
+                { code: '263750', name: '펄어비스', change: -0.13, price: 38650, market: 'KOSDAQ', cap: 24832, rank: 26 },
+                { code: '357340', name: 'JYP Ent.', change: 1.03, price: 68400, market: 'KOSDAQ', cap: 24304, rank: 28 },
+                { code: '041190', name: '에스엠', change: 0.58, price: 104400, market: 'KOSDAQ', cap: 23902, rank: 30 },
+                // FIX: 카카오게임즈 종목 코드 중복 오류 수정 (196170 -> 293490)
+                { code: '293490', name: '카카오게임즈', change: 0.18, price: 16710, market: 'KOSDAQ', cap: 15003, rank: 51 }, 
+            ],
+            // 기타 남은 종목들은 아래의 'Others' 카테고리 로직으로 처리됨.
         };
 
 
@@ -539,25 +529,45 @@
                     };
                 }
             }
+            // 전체 Market Stocks에서 찾아서 '기타' 종목의 순위도 표시되도록 업데이트
+            let allStocks = [];
+            for (const stocks of Object.values(ALL_MARKET_MAP_STOCKS)) {
+                allStocks.push(...stocks);
+            }
+            const foundInAll = allStocks.find(s => s.code === symbol);
+            if (foundInAll) {
+                 return {
+                        cap: formatCap(foundInAll.cap),
+                        rank: foundInAll.rank > 0 ? `${foundInAll.rank}위` : 'N/A' 
+                    };
+            }
+
             return { cap: 'N/A', rank: 'N/A' };
         }
         
-        // 섹터별 경계선 색상 클래스 매핑 함수
+        // 섹터별 경계선 색상 클래스 매핑 함수 (세분화된 섹터에 새 색상 추가)
         function getSectorBorderColor(sectorName) {
             if (sectorName.includes('반도체')) return 'border-sector-red';
             if (sectorName.includes('2차전지')) return 'border-sector-blue';
             if (sectorName.includes('완성차')) return 'border-sector-green';
-            if (sectorName.includes('AI') || sectorName.includes('플랫폼') || sectorName.includes('IT 플랫폼')) return 'border-sector-red';
-            if (sectorName.includes('제약') || sectorName.includes('바이오') || sectorName.includes('의료기기')) return 'border-sector-purple';
+            if (sectorName.includes('IT 플랫폼')) return 'border-sector-red';
+            
+            // 세분화된 바이오/의료기기
+            if (sectorName.includes('ADC/mRNA')) return 'border-sector-purple'; // Darker purple
+            if (sectorName.includes('미용')) return 'border-sector-fuchsia'; // Fuchsia for aesthetics
+            
             if (sectorName.includes('은행') || sectorName.includes('종합금융')) return 'border-sector-amber';
             if (sectorName.includes('조선') || sectorName.includes('방산') || sectorName.includes('중공업')) return 'border-sector-orange';
             if (sectorName.includes('지주사') || sectorName.includes('IT서비스')) return 'border-sector-indigo';
             if (sectorName.includes('철강') || sectorName.includes('금속') || sectorName.includes('해운')) return 'border-sector-lime';
             if (sectorName.includes('전력기기') || sectorName.includes('변압기')) return 'border-sector-cyan';
             if (sectorName.includes('로봇') || sectorName.includes('자동화')) return 'border-sector-pink';
-            if (sectorName.includes('소비재') || sectorName.includes('전자부품')) return 'border-sector-teal';
-            if (sectorName.includes('게임') || sectorName.includes('엔터테인먼트')) return 'border-red-400';
-            return 'border-slate-500';
+            
+            // 세분화된 IT/콘텐츠
+            if (sectorName.includes('첨단 IT')) return 'border-sector-teal';
+            if (sectorName.includes('게임') || sectorName.includes('엔터테인먼트') || sectorName.includes('콘텐츠')) return 'border-sector-violet';
+            
+            return 'border-slate-500'; // 기타
         }
 
         // 섹터 강도 시각화 막대 HTML 생성 (목록 보기용)
@@ -619,10 +629,10 @@
                 strengthBadge = `<span class="ml-1 text-[8px] font-bold text-indigo-500" title="섹터 대비 약세"><i class="fa-solid fa-down-long"></i></span>`;
             }
             
-            // Proportional View에서는 개별 카드의 크기는 작게 통일하여 '바구니' 크기를 강조
-            const nameSize = 'text-xs font-medium';
-            const priceSize = 'text-base';
-            const heightClass = 'h-[70px]'; 
+            // 종목 카드의 크기와 폰트 크기는 그대로 유지
+            const nameSize = 'text-sm font-semibold';
+            const priceSize = 'text-lg'; 
+            const heightClass = 'h-[90px]'; 
 
             return `
                 <div onclick="document.getElementById('symbol-input').value='${stock.code}'; fetchAllData()" 
@@ -1082,7 +1092,6 @@
             const neutralCount = totalCount - upCount - downCount;
             const upPercent = totalCount > 0 ? (upCount / totalCount) * 100 : 0;
             const downPercent = totalCount > 0 ? (downCount / totalCount) * 100 : 0;
-            // FIX: neutralPercent is not defined 오류 수정.
             const neutralPercent = totalCount > 0 ? (neutralCount / totalCount) * 100 : 0;
 
 
@@ -1211,35 +1220,54 @@
 
                 mapContentHtml += `</div>`;
             } else {
-                // --- PROPORTIONAL BASKET VIEW (시가총액 지도) ---
-                const TOP_N_SECTORS = 4;
-                let proportionalHtml = '';
-                let remainingStocks = [];
-
-                const sortedSectors = Object.keys(finalStocksBySector).sort((a, b) => totalCapBySector[b] - totalCapBySector[a]);
-                const topSectors = sortedSectors.slice(0, TOP_N_SECTORS);
-                const remainingSectors = sortedSectors.slice(TOP_N_SECTORS);
+                // --- PROPORTIONAL BASKET VIEW (시가총액 지도 - DYNAMIC PUZZLE LAYOUT) ---
                 
-                // 1. Proportional Baskets Wrapper
-                // min-h-[600px]로 높이 확장 및 flex-wrap을 사용하여 유연하게 처리
-                proportionalHtml += `<div class="flex flex-col lg:flex-row lg:flex-wrap w-full h-auto min-h-[600px] rounded-2xl overflow-hidden shadow-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">`;
+                // 1. 섹터별 시가총액 기준으로 내림차순 정렬
+                const sortedSectors = Object.keys(finalStocksBySector).sort((a, b) => totalCapBySector[b] - totalCapBySector[a]);
+                
+                // 2. 메인 컨테이너 설정 (높이 고정, flex-wrap으로 비율에 따라 배치)
+                let proportionalHtml = `<div id="treemap-visualizer" class="flex flex-wrap content-start w-full lg:h-[700px] h-auto min-h-[500px] rounded-2xl overflow-hidden shadow-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 transform-gpu">`;
 
-                // 2. Render Top N Proportional Baskets (각 바구니의 너비를 25%로 고정하고, overflow를 막음)
-                topSectors.forEach(sectorName => {
+                let currentHtml = '';
+                
+                // 3. 개별 섹터 박스 생성 (모든 섹터를 포함하도록 로직 변경)
+                sortedSectors.forEach((sectorName) => {
                     const sectorCap = totalCapBySector[sectorName];
-                    const totalCapOfTopSectors = topSectors.reduce((sum, name) => sum + totalCapBySector[name], 0);
-                    const hoverTitle = `시총 비중: ${(sectorCap/totalMarketCap * 100).toFixed(1)}% (Top 섹터 중: ${(sectorCap/totalCapOfTopSectors * 100).toFixed(1)}%)`;
-
+                    const marketShare = sectorCap / totalMarketCap;
                     const stocks = finalStocksBySector[sectorName];
-                    const sectorBorderClass = getSectorBorderColor(sectorName);
                     const avgChange = sectorPerformance[sectorName];
+                    const sectorBorderClass = getSectorBorderColor(sectorName);
                     const bgColorClass = getCardGradient(avgChange);
                     
-                    // 수정: widthStyle을 제거하고 lg:w-1/4, w-full을 사용
-                    proportionalHtml += `
+                    // 동적 너비 계산: 최소 20% 보장.
+                    let widthPercent = Math.max(20, Math.min(100, marketShare * 100 * 2)); 
+                    if (marketShare > 0.4) widthPercent = 100; // 가장 큰 섹터는 100% (새 줄)
+                    // 종목이 하나만 있어도 최소 20% 너비를 확보합니다.
+
+                    const hoverTitle = `시총 비중: ${(marketShare * 100).toFixed(1)}%`;
+                    
+                    // 내부 종목의 그리드 컬럼 수 결정
+                    // 종목당 너비가 너무 작아지지 않도록 2열을 기본으로 하되, 섹터 크기가 커지면 최대 5열까지 확장
+                    let gridCols = 'grid-cols-2'; // Default: 2 columns
+                    if (widthPercent > 40 && widthPercent <= 65) gridCols = 'grid-cols-3'; // Medium basket
+                    if (widthPercent > 65 && widthPercent <= 80) gridCols = 'grid-cols-4'; // Large basket
+                    if (widthPercent > 80) gridCols = 'grid-cols-5'; // Extra large basket 
+                    
+                    // 종목이 1개면 1열로 강제 (모바일에서는 1열, 데스크톱에서는 2열 유지)
+                    if (stocks.length === 1) {
+                         gridCols = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2';
+                    } else if (stocks.length === 2) {
+                         gridCols = 'grid-cols-2 md:grid-cols-2 lg:grid-cols-2';
+                    } else {
+                         // 3개 이상일 때만 동적 그리드 적용
+                         gridCols = `grid-cols-2 md:grid-cols-3 lg:${gridCols}`;
+                    }
+
+                    currentHtml += `
                         <!-- Proportional Basket for ${sectorName} -->
                         <div title="${hoverTitle}"
-                            class="w-full lg:w-1/4 flex-shrink-0 p-3 border-b lg:border-r lg:border-b-0 border-slate-300 dark:border-slate-700 ${bgColorClass} min-h-[120px] lg:h-full">
+                            style="width: ${widthPercent}%;"
+                            class="treemap-basket flex-shrink-0 flex-grow-0 p-3 border-r border-b border-slate-300 dark:border-slate-700 ${bgColorClass} min-h-[120px] lg:h-auto transition-all duration-300">
                             
                             <!-- Sector Header -->
                             <div class="text-sm lg:text-base font-extrabold text-slate-800 dark:text-slate-200 mb-2 border-l-4 ${sectorBorderClass} pl-2 flex justify-between items-center">
@@ -1247,65 +1275,24 @@
                                 <span class="text-xs font-bold ${getColor(avgChange)}">${avgChange > 0 ? '▲' : '▼'}${avgChange.toFixed(2)}%</span>
                             </div>
 
-                            <!-- Individual Stocks Grid: Fixed 2-column on mobile, 3-column on desktop (inside the proportional space) -->
-                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2 proportional-basket-stocks">
+                            <!-- Individual Stocks Grid -->
+                            <div class="grid ${gridCols} gap-2 proportional-basket-stocks">
                     `;
 
                     // Render stocks inside this sector basket (sorted by rank/cap)
                     stocks.sort((a, b) => b.cap - a.cap); 
                     stocks.forEach(stock => {
                         const stockHtml = generateStockCardHtml(stock, sectorName);
-                        proportionalHtml += `<div>${stockHtml}</div>`; 
+                        currentHtml += `<div>${stockHtml}</div>`; 
                     });
                     
-                    proportionalHtml += `
+                    currentHtml += `
                             </div>
                         </div>
                     `;
                 });
-
-                // 3. Group remaining stocks into an "Others" basket
-                if (remainingSectors.length > 0) {
-                    remainingSectors.forEach(sectorName => {
-                        remainingStocks.push(...finalStocksBySector[sectorName]);
-                    });
-
-                    const remainingCap = remainingSectors.reduce((sum, name) => sum + totalCapBySector[name], 0);
-                    const avgChange = remainingStocks.length > 0 ? (remainingStocks.reduce((sum, s) => sum + s.change, 0) / remainingStocks.length) : 0;
-                    const bgColorClass = getCardGradient(avgChange);
-                    
-                    const totalRemainingCap = totalMarketCap - topSectors.reduce((sum, name) => sum + totalCapBySector[name], 0);
-                    const hoverTitle = `시총 비중: ${(remainingCap/totalMarketCap * 100).toFixed(1)}%`;
-                    
-                    // 수정: 나머지 공간을 모두 차지하도록 lg:w-full 또는 lg:flex-grow 사용
-                    proportionalHtml += `
-                        <!-- Others Basket -->
-                        <div title="${hoverTitle}"
-                            class="w-full lg:flex-grow p-3 ${bgColorClass} min-h-[120px] lg:h-full">
-                            
-                            <div class="text-sm lg:text-base font-extrabold text-slate-800 dark:text-slate-200 mb-2 border-l-4 border-slate-500 pl-2 flex justify-between items-center">
-                                <span>기타 ${remainingSectors.length}개 섹터 (${remainingStocks.length}개 종목)</span>
-                                <span class="text-xs font-bold ${getColor(avgChange)}">${avgChange > 0 ? '▲' : '▼'}${avgChange.toFixed(2)}%</span>
-                            </div>
-
-                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 proportional-basket-stocks">
-                    `;
-                    
-                    remainingStocks.sort((a, b) => b.cap - a.cap); 
-                    remainingStocks.forEach(stock => {
-                        const sectorNameForStock = Object.keys(ALL_MARKET_MAP_STOCKS).find(key => 
-                            ALL_MARKET_MAP_STOCKS[key].some(s => s.code === stock.code && s.market === stock.market)
-                        ) || '기타';
-                        const stockHtml = generateStockCardHtml(stock, sectorNameForStock);
-                        proportionalHtml += `<div>${stockHtml}</div>`;
-                    });
-                    
-                    proportionalHtml += `
-                            </div>
-                        </div>
-                    `;
-                }
-
+                
+                proportionalHtml += currentHtml;
                 proportionalHtml += `</div>`; 
                 mapContentHtml += proportionalHtml;
             }
@@ -1534,7 +1521,10 @@
             
             document.getElementById('link-naver').href = !isNaN(data.symbol) ? `https://finance.naver.com/item/main.naver?code=${data.symbol}` : `https://finance.yahoo.com/quote/${data.symbol}`;
 
-            const stockName = ALL_MARKET_MAP_STOCKS['반도체 대형주/IDM'].find(s => s.code === currentSymbol)?.name || '';
+            // 종목명으로 DART 검색 쿼리 업데이트
+            const allStocksList = Object.values(ALL_MARKET_MAP_STOCKS).flat();
+            const currentStock = allStocksList.find(s => s.code === currentSymbol);
+            const stockName = currentStock ? currentStock.name : currentSymbol;
             const dartQuery = `${stockName} ${currentSymbol}`;
             document.getElementById('link-dart').href = `https://dart.fss.or.kr/dsac001/mainK.do?textCrpNm=${dartQuery}&autoSearch=true`;
 

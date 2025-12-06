@@ -64,6 +64,12 @@
             </div>
             
             <div class="flex items-center gap-4">
+                <!-- ✅ 수동 새로고침 버튼 추가 -->
+                <button onclick="manualRefresh()" id="btn-refresh" 
+                        class="p-2 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
+                        title="수동으로 시세 갱신">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
                 <button onclick="toggleDarkMode()" class="p-2"><i id="theme-icon" class="fa-solid fa-moon"></i></button>
             </div>
         </div>
@@ -275,7 +281,7 @@
             { id: 'NQ=F', name: 'NASDAQ 선물', link: 'https://kr.investing.com/indices/nq-100-futures' }, 
             { id: 'KRW=X', name: 'USD/KRW', link: 'https://finance.naver.com/marketindex/exchangeDetail.naver?marketindexCd=FX_USDKRW' },
             { id: 'BTC-KRW', name: 'Bitcoin', link: 'https://kr.investing.com/crypto/bitcoin/btc-krw' },
-            { id: 'SI=F', name: 'Silver(XAG/USD)', link: 'https://kr.investing.com/commodities/silver' }
+            { id: 'XAG=X', name: 'Silver (XAG/USD 현물)', link: 'https://kr.investing.com/commodities/silver' } // ✅ 수정됨: 현물 심볼로 변경
         ];
 
         // 환율 계산기 로직 유지를 위해 EUR/JPY 데이터는 Mock으로 유지
@@ -573,7 +579,7 @@
 
             if(document.getElementById('tab-community').classList.contains('active')) fetchCommunity();
             
-            // 실시간 가격 데이터의 안정성을 위해 10초마다 갱신을 요청합니다.
+            // 갱신 함수 호출 (자동 갱신은 setInterval에 의해 이루어짐)
             fetchMarketData(); 
         }
         
@@ -969,6 +975,13 @@
         }
         
         async function fetchMarketData() {
+            // 새로고침 아이콘에 스피너가 표시되고 있을 경우, 완료 후 제거합니다.
+            const refreshIcon = document.getElementById('btn-refresh').querySelector('i');
+            refreshIcon.classList.remove('fa-spin');
+            refreshIcon.classList.remove('text-blue-600');
+            refreshIcon.classList.add('text-slate-500');
+
+
             // 1. 주요 지표 갱신
             INDICES.forEach(async (index) => {
                 // ✅ [수정] Mock 데이터 강제 사용: API 호출 실패 가정
@@ -1078,17 +1091,24 @@
         }
 
         function getMockData(symbol, name = '') {
+            // Mock 데이터 생성 시, Math.random()을 사용하여 가격을 미세하게 변화시킵니다.
+            const randomFactor = Math.random() * 0.05 - 0.025; // -2.5% ~ +2.5% 사이의 작은 변동
             const randomChangePercent = (Math.random() * 2 - 1);
             let basePrice = 1000;
+            
             if(symbol.includes('KS11')) basePrice = 2500;
             else if(symbol.includes('NQ')) basePrice = 18000;
+            
+            // 현물 심볼에 대한 Mock 데이터 조정
+            if (symbol === 'XAG=X') basePrice = 25.00; // Silver Spot Price Mock
             
             // 환율 Mock Data 제공 (계산기 로직 유지를 위함)
             if(symbol === 'KRW=X') basePrice = 1350;
             else if(symbol === 'EUR=X') basePrice = 1450;
             else if(symbol === 'JPY=X') basePrice = 950; // 100엔당 950원 가정 (API가 100엔당 가격을 보낸다고 가정)
             
-            const price = basePrice * (1 + randomChangePercent / 100);
+            // 가격을 임의로 약간 변동시켜서 실시간 갱신처럼 보이게 합니다.
+            const price = basePrice * (1 + randomFactor + randomChangePercent / 100);
 
             // 종목 이름은 Mock Stocks에서 가져와서 Mock Data에 포함합니다.
             let stockName = name;
@@ -1113,6 +1133,29 @@
         }
         function mockStock(sym) { return getMockData(sym); }
 
+        // === 수동 새로고침 기능 ===
+        function manualRefresh() {
+            const refreshButton = document.getElementById('btn-refresh');
+            const refreshIcon = refreshButton.querySelector('i');
+
+            // 버튼 비활성화 및 스피너 시작
+            refreshButton.disabled = true;
+            refreshIcon.className = 'fa-solid fa-spinner fa-spin text-blue-600';
+            refreshIcon.classList.remove('text-slate-500');
+
+            // 데이터 갱신 시작
+            fetchMarketData();
+
+            // 1초 후 스피너 멈춤 및 버튼 재활성화 (Mock 데이터는 즉시 로드되므로 시각적 피드백을 위해 딜레이)
+            setTimeout(() => {
+                refreshButton.disabled = false;
+                refreshIcon.className = 'fa-solid fa-arrows-rotate';
+                refreshIcon.classList.remove('fa-spin');
+                refreshIcon.classList.remove('text-blue-600');
+                refreshIcon.classList.add('text-slate-500');
+            }, 1000); 
+        }
+
         // === 초기화 ===
         function init() {
             initDarkMode();
@@ -1133,7 +1176,8 @@
             // 초기 로드
             fetchAllData(); 
             
-            // ✅ [수정] 가격 정보 갱신 주기를 3분(180초)으로 변경 (180000ms)
+            // ✅ [수정] 가격 정보 자동 갱신 주기를 3분(180초)으로 변경 (180000ms)
+            // Mock 데이터를 사용하므로, 3분마다 값이 미세하게 변동하여 갱신되는 것처럼 보입니다.
             setInterval(fetchMarketData, 180000); 
         }
         

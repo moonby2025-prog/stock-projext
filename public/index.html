@@ -64,6 +64,8 @@
             transition: transform 0.1s ease-out, box-shadow 0.1s ease-out; 
             transform-style: preserve-3d; 
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15); /* 기본 그림자 강화 */
+            /* 카드가 동적으로 크기 조절되므로 h-full을 쓰지 않고 내부 컨텐츠로 높이 조절 */
+            height: 100%; 
         }
         .dark .treemap-card-3d {
              box-shadow: 0 6px 15px rgba(255, 255, 255, 0.08);
@@ -84,7 +86,7 @@
         .border-sector-violet { border-color: #7c3aed; } /* New color for new sectors */
         .border-sector-fuchsia { border-color: #d946ef; } /* New color for new sectors */
         
-        /* 상승/하락에 따른 트레맵 카드 배경 강조 (미세한 그라디언트) */
+        /* 상승/하락에 따른 트레맵 카드 배경 강조 (미세한 그라데이션) */
         .bg-gradient-positive { background: linear-gradient(135deg, #fef2f2 5%, #fff 50%); }
         .bg-gradient-negative { background: linear-gradient(135deg, #eff6ff 5%, #fff 50%); }
         .dark .bg-gradient-positive { background: linear-gradient(135deg, #450a0a 5%, #1e293b 50%); }
@@ -447,14 +449,14 @@
                 { code: '004700', name: '신성델타테크', change: 5.16, price: 63200, market: 'KOSDAQ', cap: 17370, rank: 43 },
                 { code: '347470', name: '서진시스템', change: 2.41, price: 25500, market: 'KOSDAQ', cap: 14352, rank: 57 },
             ],
-            // 기존 '제약/바이오 성장' 분리
-            'ADC/mRNA 바이오': [ 
+            '바이오/헬스케어 성장': [ 
                 { code: '196170', name: '알테오젠', change: -12.04, price: 456500, market: 'KOSDAQ', cap: 244254, rank: 1 },
                 { code: '298380', name: '에이비엘바이오', change: -5.17, price: 190600, market: 'KOSDAQ', cap: 105069, rank: 4 },
                 { code: '141080', name: '리가켐바이오', change: -5.41, price: 185500, market: 'KOSDAQ', cap: 67912, rank: 6 },
                 { code: '310960', name: '코오롱티슈진', change: -2.56, price: 80000, market: 'KOSDAQ', cap: 66577, rank: 7 },
                 { code: '199800', name: '펩트론', change: 1.60, price: 285000, market: 'KOSDAQ', cap: 66454, rank: 8 },
                 { code: '088520', name: 'HLB', change: 1.66, price: 49100, market: 'KOSDAQ', cap: 64730, rank: 9 },
+                { code: '455910', name: '큐리옥스바이오시스템즈', change: -3.50, price: 23000, market: 'KOSDAQ', cap: 14500, rank: 55 }, // 시총 60위 내 종목 추가
             ],
             '미용/피부 의료기기/에스테틱': [
                 { code: '214450', name: '파마리서치', change: -2.31, price: 401500, market: 'KOSDAQ', cap: 41714, rank: 13 },
@@ -477,7 +479,6 @@
                 { code: '095340', name: 'ISC', change: -0.73, price: 109500, market: 'KOSDAQ', cap: 23211, rank: 31 },
                 { code: '036930', name: '솔브레인', change: -0.73, price: 271500, market: 'KOSDAQ', cap: 21119, rank: 35 },
             ],
-            // 기존 'IT 부품/기타소비재' 분리
             '첨단 IT 부품/장비': [ 
                 { code: '057080', name: '유진테크', change: 0.26, price: 77000, market: 'KOSDAQ', cap: 17645, rank: 40 },
                 { code: '089030', name: '테크윙', change: 3.41, price: 47050, market: 'KOSDAQ', cap: 17434, rank: 41 },
@@ -491,10 +492,34 @@
                 { code: '263750', name: '펄어비스', change: -0.13, price: 38650, market: 'KOSDAQ', cap: 24832, rank: 26 },
                 { code: '357340', name: 'JYP Ent.', change: 1.03, price: 68400, market: 'KOSDAQ', cap: 24304, rank: 28 },
                 { code: '041190', name: '에스엠', change: 0.58, price: 104400, market: 'KOSDAQ', cap: 23902, rank: 30 },
-                // FIX: 카카오게임즈 종목 코드 중복 오류 수정 (196170 -> 293490)
                 { code: '293490', name: '카카오게임즈', change: 0.18, price: 16710, market: 'KOSDAQ', cap: 15003, rank: 51 }, 
             ],
-            // 기타 남은 종목들은 아래의 'Others' 카테고리 로직으로 처리됨.
+            // 시총 60위 커버리지를 위한 추가 목업 종목 (Placeholder)
+            'KOSDAQ 기타 성장주': [
+                { code: '900001', name: '성장주_A1', change: 0.1, price: 15000, market: 'KOSDAQ', cap: 14000, rank: 52 },
+                { code: '900002', name: '성장주_A2', change: -0.5, price: 14500, market: 'KOSDAQ', cap: 13500, rank: 54 },
+                { code: '900003', name: '성장주_A3', change: 1.2, price: 14000, market: 'KOSDAQ', cap: 13000, rank: 56 },
+                { code: '900004', name: '성장주_A4', change: 2.1, price: 13500, market: 'KOSDAQ', cap: 12500, rank: 59 },
+                { code: '900005', name: '성장주_A5', change: -3.0, price: 13000, market: 'KOSDAQ', cap: 12000, rank: 60 },
+                { code: '900006', name: '성장주_A6', change: 0.8, price: 12500, market: 'KOSDAQ', cap: 11500, rank: 61 },
+                { code: '900007', name: '성장주_A7', change: 1.5, price: 12000, market: 'KOSDAQ', cap: 11000, rank: 62 },
+                { code: '900008', name: '성장주_A8', change: 0.2, price: 11500, market: 'KOSDAQ', cap: 10500, rank: 63 },
+                { code: '900009', name: '성장주_A9', change: 0.4, price: 11000, market: 'KOSDAQ', cap: 10000, rank: 64 },
+                { code: '900010', name: '성장주_A10', change: -1.0, price: 10500, market: 'KOSDAQ', cap: 9500, rank: 65 },
+                { code: '900011', name: '성장주_A11', change: 0.6, price: 10000, market: 'KOSDAQ', cap: 9000, rank: 66 },
+                { code: '900012', name: '성장주_A12', change: 1.1, price: 9500, market: 'KOSDAQ', cap: 8500, rank: 67 },
+                { code: '900013', name: '성장주_A13', change: 0.0, price: 9000, market: 'KOSDAQ', cap: 8000, rank: 68 },
+                { code: '900014', name: '성장주_A14', change: -0.3, price: 8500, market: 'KOSDAQ', cap: 7500, rank: 69 },
+                { code: '900015', name: '성장주_A15', change: 0.7, price: 8000, market: 'KOSDAQ', cap: 7000, rank: 70 },
+                { code: '900016', name: '성장주_A16', change: 1.3, price: 7500, market: 'KOSDAQ', cap: 6500, rank: 71 },
+                { code: '900017', name: '성장주_A17', change: -0.8, price: 7000, market: 'KOSDAQ', cap: 6000, rank: 72 },
+                { code: '900018', name: '성장주_A18', change: 1.6, price: 6500, market: 'KOSDAQ', cap: 5500, rank: 73 },
+                { code: '900019', name: '성장주_A19', change: 0.9, price: 6000, market: 'KOSDAQ', cap: 5000, rank: 74 },
+                { code: '900020', name: '성장주_A20', change: -2.0, price: 5500, market: 'KOSDAQ', cap: 4500, rank: 75 },
+                { code: '900021', name: '성장주_A21', change: 0.5, price: 5000, market: 'KOSDAQ', cap: 4000, rank: 76 },
+                { code: '900022', name: '성장주_A22', change: 2.5, price: 4500, market: 'KOSDAQ', cap: 3500, rank: 77 },
+                { code: '900023', name: '성장주_A23', change: 1.9, price: 4000, market: 'KOSDAQ', cap: 3000, rank: 78 },
+            ]
         };
 
 
@@ -553,7 +578,7 @@
             if (sectorName.includes('IT 플랫폼')) return 'border-sector-red';
             
             // 세분화된 바이오/의료기기
-            if (sectorName.includes('ADC/mRNA')) return 'border-sector-purple'; // Darker purple
+            if (sectorName.includes('바이오') || sectorName.includes('헬스케어')) return 'border-sector-purple'; // Darker purple
             if (sectorName.includes('미용')) return 'border-sector-fuchsia'; // Fuchsia for aesthetics
             
             if (sectorName.includes('은행') || sectorName.includes('종합금융')) return 'border-sector-amber';
@@ -629,10 +654,9 @@
                 strengthBadge = `<span class="ml-1 text-[8px] font-bold text-indigo-500" title="섹터 대비 약세"><i class="fa-solid fa-down-long"></i></span>`;
             }
             
-            // 종목 카드의 크기와 폰트 크기는 그대로 유지
+            // 종목 카드의 높이를 h-full로 변경하여 부모 컨테이너 높이에 맞춥니다.
             const nameSize = 'text-sm font-semibold';
             const priceSize = 'text-lg'; 
-            const heightClass = 'h-[90px]'; 
 
             return `
                 <div onclick="document.getElementById('symbol-input').value='${stock.code}'; fetchAllData()" 
@@ -640,7 +664,7 @@
                     onmouseout="resetTilt(this)"
                     data-code="${stock.code}"
                     data-sector="${sectorName}"
-                    class="relative ${heightClass} p-2 rounded-lg treemap-card-3d border ${sectorBorderClass} border-opacity-70 cursor-pointer ${bgColorClass} hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 dark:border-slate-700 flex flex-col justify-between overflow-hidden">
+                    class="relative h-full p-2 rounded-lg treemap-card-3d border ${sectorBorderClass} border-opacity-70 cursor-pointer ${bgColorClass} hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 dark:border-slate-700 flex flex-col justify-between overflow-hidden">
                     
                     <!-- Rank Badge -->
                     ${rankDisplay}
@@ -1035,6 +1059,7 @@
             // 3. 종목 필터링 및 랭크 확정
             let totalCapBySector = {};
             
+            // KOSPI Top 50, KOSDAQ Top 60을 기준으로 필터링
             const filterMarket = filterMode === 'KOSPI_TOP_60' ? 'KOSPI' : (filterMode === 'KOSDAQ_TOP_60' ? 'KOSDAQ' : null);
             const maxStocks = filterMarket === 'KOSPI' ? 50 : (filterMarket === 'KOSDAQ' ? 60 : 110); 
             
@@ -1048,18 +1073,21 @@
                 marketStocks = allStocks.filter(s => s.market === filterMarket);
             }
             
+            // 시가총액(cap) 기준으로 정렬하고 rank를 재할당
             marketStocks.sort((a, b) => b.cap - a.cap); 
             
             marketStocks.forEach((stock, index) => { 
                 stock.rank = index + 1; 
             });
 
-            let stocksToRender = marketStocks; 
+            // 상위 maxStocks 개수만큼만 표시
+            let stocksToRender = marketStocks.slice(0, maxStocks); 
             const totalMarketCap = stocksToRender.reduce((sum, s) => sum + s.cap, 0);
 
             let finalStocksBySector = {};
             
             stocksToRender.forEach((stock) => { 
+                // 종목이 속한 섹터를 찾습니다.
                 const sectorName = Object.keys(ALL_MARKET_MAP_STOCKS).find(key => 
                     ALL_MARKET_MAP_STOCKS[key].some(s => s.code === stock.code && s.market === stock.market)
                 ) || '기타';
@@ -1226,7 +1254,8 @@
                 const sortedSectors = Object.keys(finalStocksBySector).sort((a, b) => totalCapBySector[b] - totalCapBySector[a]);
                 
                 // 2. 메인 컨테이너 설정 (높이 고정, flex-wrap으로 비율에 따라 배치)
-                let proportionalHtml = `<div id="treemap-visualizer" class="flex flex-wrap content-start w-full lg:h-[700px] h-auto min-h-[500px] rounded-2xl overflow-hidden shadow-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 transform-gpu">`;
+                // overflow-hidden -> overflow-y-auto 로 변경하여 스크롤 가능하게 함.
+                let proportionalHtml = `<div id="treemap-visualizer" class="flex flex-wrap content-start w-full lg:h-[700px] h-auto min-h-[500px] rounded-2xl overflow-y-auto shadow-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 transform-gpu">`;
 
                 let currentHtml = '';
                 
@@ -1239,30 +1268,12 @@
                     const sectorBorderClass = getSectorBorderColor(sectorName);
                     const bgColorClass = getCardGradient(avgChange);
                     
-                    // 동적 너비 계산: 최소 20% 보장.
-                    let widthPercent = Math.max(20, Math.min(100, marketShare * 100 * 2)); 
+                    // 동적 너비 계산: 최소 20% 보장. (섹터 크기)
+                    let widthPercent = Math.max(20, Math.min(100, marketShare * 100 * 1.5)); 
                     if (marketShare > 0.4) widthPercent = 100; // 가장 큰 섹터는 100% (새 줄)
-                    // 종목이 하나만 있어도 최소 20% 너비를 확보합니다.
 
                     const hoverTitle = `시총 비중: ${(marketShare * 100).toFixed(1)}%`;
                     
-                    // 내부 종목의 그리드 컬럼 수 결정
-                    // 종목당 너비가 너무 작아지지 않도록 2열을 기본으로 하되, 섹터 크기가 커지면 최대 5열까지 확장
-                    let gridCols = 'grid-cols-2'; // Default: 2 columns
-                    if (widthPercent > 40 && widthPercent <= 65) gridCols = 'grid-cols-3'; // Medium basket
-                    if (widthPercent > 65 && widthPercent <= 80) gridCols = 'grid-cols-4'; // Large basket
-                    if (widthPercent > 80) gridCols = 'grid-cols-5'; // Extra large basket 
-                    
-                    // 종목이 1개면 1열로 강제 (모바일에서는 1열, 데스크톱에서는 2열 유지)
-                    if (stocks.length === 1) {
-                         gridCols = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2';
-                    } else if (stocks.length === 2) {
-                         gridCols = 'grid-cols-2 md:grid-cols-2 lg:grid-cols-2';
-                    } else {
-                         // 3개 이상일 때만 동적 그리드 적용
-                         gridCols = `grid-cols-2 md:grid-cols-3 lg:${gridCols}`;
-                    }
-
                     currentHtml += `
                         <!-- Proportional Basket for ${sectorName} -->
                         <div title="${hoverTitle}"
@@ -1275,15 +1286,32 @@
                                 <span class="text-xs font-bold ${getColor(avgChange)}">${avgChange > 0 ? '▲' : '▼'}${avgChange.toFixed(2)}%</span>
                             </div>
 
-                            <!-- Individual Stocks Grid -->
-                            <div class="grid ${gridCols} gap-2 proportional-basket-stocks">
+                            <!-- Individual Stocks Proportional Flex Container (The Core Fix: Using flex-wrap for proportional flow) -->
+                            <div class="flex flex-wrap content-start w-full proportional-basket-stocks">
                     `;
 
                     // Render stocks inside this sector basket (sorted by rank/cap)
                     stocks.sort((a, b) => b.cap - a.cap); 
+                    
+                    const stocksTotalCap = stocks.reduce((sum, s) => sum + s.cap, 0);
+                    const fixedItemHeight = 100; // 종목 카드 높이는 가독성을 위해 100px로 고정
+
                     stocks.forEach(stock => {
+                        // 종목의 섹터 내 비중 계산
+                        const stockShareInSector = stock.cap / stocksTotalCap;
+
+                        // 비중에 따라 너비 결정 (최소 20% 너비 확보, 최대 100%)
+                        let itemWidthPercent = Math.max(20, stockShareInSector * 100 * 1.5); 
+                        itemWidthPercent = Math.min(100, itemWidthPercent); 
+
                         const stockHtml = generateStockCardHtml(stock, sectorName);
-                        currentHtml += `<div>${stockHtml}</div>`; 
+                        
+                        currentHtml += `
+                            <!-- Stock Item Wrapper: Proportional Width, Fixed Height -->
+                            <div style="width: ${itemWidthPercent}%; height: ${fixedItemHeight}px; min-width: 100px; padding: 4px;" class="flex-shrink-0 flex-grow transition-all duration-300">
+                                ${stockHtml}
+                            </div>
+                        `;
                     });
                     
                     currentHtml += `
@@ -1612,10 +1640,10 @@
                 if (found) {
                     stock = found;
                     fixedChangePercent = stock.change; 
+                    // 가격은 cap과 change를 바탕으로 역산 (목업 데이터 일관성 유지)
                     basePrice = stock.price / (1 + fixedChangePercent / 100); 
                     break;
                 }
-                // Mock 데이터에서 찾지 못하면 기본값 유지
             }
 
             let price = stock ? stock.price : (basePrice * (1 + fixedChangePercent / 100));

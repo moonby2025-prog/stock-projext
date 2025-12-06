@@ -281,7 +281,7 @@
             { id: 'NQ=F', name: 'NASDAQ 선물', link: 'https://kr.investing.com/indices/nq-100-futures' }, 
             { id: 'KRW=X', name: 'USD/KRW', link: 'https://finance.naver.com/marketindex/exchangeDetail.naver?marketindexCd=FX_USDKRW' },
             { id: 'BTC-KRW', name: 'Bitcoin', link: 'https://kr.investing.com/crypto/bitcoin/btc-krw' },
-            { id: 'XAG=X', name: 'Silver (XAG/USD 현물)', link: 'https://kr.investing.com/commodities/silver' } // ✅ 수정됨: 현물 심볼로 변경
+            { id: 'XAG=X', name: 'Silver (XAG/USD 현물)', link: 'https://kr.investing.com/commodities/silver' } 
         ];
 
         // 환율 계산기 로직 유지를 위해 EUR/JPY 데이터는 Mock으로 유지
@@ -524,7 +524,7 @@
 
             container.innerHTML = ''; 
 
-            // ✅ [수정] Mock 데이터 강제 사용: API 호출 실패 가정
+            // ✅ Mock 데이터 강제 사용: API 호출 실패 가정
             const promises = favs.map(symbol => Promise.resolve(getMockData(symbol)));
             const results = await Promise.all(promises);
 
@@ -573,7 +573,7 @@
             
             updateFavoriteBtnState(); 
             
-            // ✅ [수정] Mock 데이터 강제 사용: API 호출 실패 가정
+            // ✅ Mock 데이터 강제 사용: API 호출 실패 가정
             const data = getMockData(sym);
             renderMain(data);
 
@@ -909,9 +909,53 @@
         }
 
 
+        // ✅ 새로운 Mock 커뮤니티 데이터 생성 함수
+        function getMockCommunityData(symbol, name) {
+            // 현재 시간을 기반으로 시뮬레이션된 랜덤성을 부여
+            const randomSeed = Math.floor(Math.random() * 1000) + new Date().getMinutes() * 10; 
+            const isUp = getMockData(symbol).change > 0;
+            
+            const bestTitles = [
+                `${name} 폭등 신호! 기관 매수 포착. (V.${randomSeed % 5 + 1})`,
+                `[HOT] ${name} vs 경쟁사, 하반기 전망 심층 분석 리포트`,
+                `장기 관점에서 보면 지금은 절호의 ${isUp ? '매수' : '관망'} 기회 (W.${randomSeed % 7 + 1})`,
+            ];
+
+            const latestTitles = [
+                `현재가 ${isUp ? '상승' : '하락'} 추이 분석 요청드립니다.`,
+                `${name} 왜 갑자기 ${isUp ? '오르는' : '빠지는'} 걸까요?`,
+                `이번 분기 실적 발표 예상치 및 전망 공유 부탁드려요.`,
+            ];
+            
+            // 조회수/공감수 시뮬레이션
+            const baseViews = 2000;
+            const baseLikes = 400;
+
+            return {
+                best: bestTitles.map((title, i) => ({
+                    title: title,
+                    link: '#',
+                    views: formatNum(Math.floor(baseViews + (randomSeed % 100) * (i + 1) * 5)),
+                    likes: formatNum(Math.floor(baseLikes + (randomSeed % 50) * (i + 1) * 3)),
+                    date: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+                })),
+                latest: latestTitles.map((title, i) => ({
+                    title: title,
+                    link: '#',
+                    views: formatNum(Math.floor(100 + (randomSeed % 20) * (i + 1))),
+                    likes: formatNum(Math.floor(10 + (randomSeed % 5) * (i + 1))),
+                    date: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+                }))
+            };
+        }
+
+
         async function fetchCommunity() {
             const bestList = document.getElementById('best-community-list');
             const latestList = document.getElementById('latest-community-list');
+            
+            // 현재 메인 종목 데이터를 가져와 이름(name)을 확보
+            const mainStockData = getMockData(currentSymbol);
             
             if(isNaN(currentSymbol)) {
                 bestList.innerHTML = '<div class="text-center text-xs text-slate-400">지원하지 않는 종목입니다.</div>';
@@ -920,22 +964,10 @@
             }
 
             bestList.innerHTML = '<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin text-red-500"></i></div>';
-            latestList.innerHTML = '';
+            latestList.innerHTML = '<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin text-slate-500"></i></div>';
             
-            // ✅ [수정] Mock 데이터 강제 사용: API 호출 실패 가정
-            // 실제 API 호출 대신 Mock 데이터를 즉시 반환하도록 수정 (5분 주기 캐싱 전략은 서버에서 구현된다고 가정)
-            const data = {
-                best: [
-                    { title: `[BEST] ${currentSymbol} 대장주 드디어 움직이나?`, link: '#', views: '5.2K', likes: '1.2K', date: '14:30' },
-                    { title: `🔥 급등 임박! 기관 매수 포착`, link: '#', views: '3.1K', likes: '890', date: '15:15' },
-                    { title: `장기 관점에서 보면 지금은 기회`, link: '#', views: '2.5K', likes: '550', date: '16:00' },
-                ],
-                latest: [
-                    { title: `현재가 추이 분석 부탁드립니다.`, link: '#', views: '120', likes: '10', date: '17:05' },
-                    { title: `왜 갑자기 빠지는 걸까요?`, link: '#', views: '88', likes: '5', date: '17:08' },
-                    { title: `이번 실적 발표 예상은?`, link: '#', views: '200', likes: '15', date: '17:10' },
-                ]
-            };
+            // ✅ Mock 데이터 생성 함수 호출
+            const data = getMockCommunityData(currentSymbol, mainStockData.name);
 
             // 베스트글 렌더링
             if(data.best && data.best.length > 0) {
@@ -971,6 +1003,8 @@
                         </div>
                     </a>
                 `).join('');
+            } else {
+                latestList.innerHTML = '<div class="text-center py-2 text-xs text-slate-400">최신글이 없습니다.</div>';
             }
         }
         
@@ -984,7 +1018,7 @@
 
             // 1. 주요 지표 갱신
             INDICES.forEach(async (index) => {
-                // ✅ [수정] Mock 데이터 강제 사용: API 호출 실패 가정
+                // ✅ Mock 데이터 강제 사용
                 const data = getMockData(index.id);
                 
                 // 환율 데이터가 들어오면 currentRates 객체를 업데이트
@@ -1000,15 +1034,18 @@
 
                 // Mock Rate 사용 시 currentRates 업데이트
                 if (index.id === 'KRW=X') {
-                    currentRates['USD'].rate = 1350; // Mock Rate
+                    currentRates['USD'].rate = getMockData('KRW=X').price; // Mock Rate 갱신
                     updateCurrencyRate();
                 }
-                if (currentRates['EUR']) currentRates['EUR'].rate = 1450;
-                if (currentRates['JPY']) currentRates['JPY'].rate = 9.5;
+                if (currentRates['EUR']) currentRates['EUR'].rate = getMockData('EUR=X').price;
+                if (currentRates['JPY']) currentRates['JPY'].rate = getMockData('JPY=X').price;
             });
             
             // 2. 관심 종목 데이터 갱신
             fetchWatchlistData();
+
+            // 3. 커뮤니티 데이터 갱신 (수동 새로고침 시 즉시 반영되도록)
+            if(document.getElementById('tab-community').classList.contains('active')) fetchCommunity();
         }
 
         // === 렌더링 헬퍼 ===
@@ -1071,11 +1108,12 @@
             updateFavoriteBtnState(); // 메인 종목 바뀔 때 즐겨찾기 별표 상태도 업데이트
 
             const newsBox = document.getElementById('content-news');
-            // ✅ [수정] Mock 데이터 강제 사용: API 호출 실패 가정
+            
+            // ✅ 동적으로 Mock News Data 생성 및 등락률 반영
             const newsData = [
-                { title: `[모의뉴스] ${data.name}의 ${formatNum(data.price)}원 돌파 임박`, publisher: '모의경제', link: '#' },
-                { title: `[모의뉴스] ${data.name} 2차전지/반도체 섹터의 강세 지속`, publisher: '모의뉴스24', link: '#' },
-                { title: `[모의뉴스] 외국인 매수세 유입`, publisher: '가상투자일보', link: '#' },
+                { title: `[모의뉴스] ${data.name}의 ${formatNum(data.price)}원 ${data.change > 0 ? '돌파 임박!' : '하락 압력 경고'}`, publisher: '모의경제', link: '#' },
+                { title: `[모의뉴스] ${data.name} ${data.change > 0 ? '외국인 순매수 지속' : '차익 실현 출회'} 분석`, publisher: '모의뉴스24', link: '#' },
+                { title: `[모의뉴스] ${data.name} 관련 ${data.change > 0 ? '호재성' : '리스크'} 보고서 발표 (시뮬레이션)`, publisher: '가상투자일보', link: '#' },
             ];
 
             if(newsData.length) {
@@ -1093,7 +1131,8 @@
         function getMockData(symbol, name = '') {
             // Mock 데이터 생성 시, Math.random()을 사용하여 가격을 미세하게 변화시킵니다.
             const randomFactor = Math.random() * 0.05 - 0.025; // -2.5% ~ +2.5% 사이의 작은 변동
-            const randomChangePercent = (Math.random() * 2 - 1);
+            // 등락률을 조금 더 크게 줘서 변화가 눈에 띄도록 조정 (이전 2% -> 3% 범위)
+            const randomChangePercent = (Math.random() * 3 - 1.5); 
             let basePrice = 1000;
             
             if(symbol.includes('KS11')) basePrice = 2500;

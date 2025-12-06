@@ -1,8 +1,9 @@
 {
   "name": "stock-dashboard-app",
   "version": "1.0.0",
-  "description": "Vercel serverless function for fetching AI-grounded news.",
+  "description": "Stock Dashboard with Gemini AI News",
   "main": "api/news.js",
+  "type": "module",
   "scripts": {
     "start": "vercel dev"
   },

@@ -26,7 +26,7 @@
         .best-post-card { background: linear-gradient(to right, #fef2f2, #fff); border-left: 3px solid #ef4444; }
         .dark .best-post-card { background: linear-gradient(to right, #450a0a, #1e293b); border-left: 3px solid #f87171; }
         
-        /* 마켓맵 카드 스타일 */
+        /* 마켓맵 카드 스타일 - Treemap 시뮬레이션용이 아닌, 일반 카드 스타일 유지 */
         .market-card { min-height: 120px; transition: all 0.15s; }
 
         /* 순위 스티커 애니메이션 */
@@ -50,6 +50,40 @@
             height: 150px;
             display: block;
         }
+
+        /* ✅ 주요 공시 강조 스타일 */
+        .major-disclosure-card {
+            border: 2px solid;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            background: linear-gradient(to right, #fef2f2, #fff);
+        }
+        .dark .major-disclosure-card {
+            background: linear-gradient(to right, #450a0a, #1e293b);
+        }
+
+        /* ✅ 3D Tilt 효과 및 그림자 강화 */
+        .treemap-card-3d {
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out; /* 부드러운 전환 효과 */
+            transform-style: preserve-3d; /* 3D 변형을 위한 설정 */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 기본 그림자 강화 */
+        }
+        .dark .treemap-card-3d {
+             box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+        }
+
+        /* 5. ✅ 섹터별 경계선 색상 클래스 */
+        .border-sector-red { border-color: #ef4444; }
+        .border-sector-blue { border-color: #3b82f6; }
+        .border-sector-green { border-color: #10b981; }
+        .border-sector-purple { border-color: #8b5cf6; }
+        .border-sector-amber { border-color: #f59e0b; }
+        .border-sector-orange { border-color: #f97316; }
+        .border-sector-indigo { border-color: #6366f1; }
+        .border-sector-lime { border-color: #84cc16; }
+        .border-sector-cyan { border-color: #06b6d4; }
+        .border-sector-pink { border-color: #ec4899; }
+        .border-sector-teal { border-color: #14b8a6; }
+        
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 transition-colors duration-200 dark:bg-slate-900 dark:text-slate-100">
@@ -126,17 +160,19 @@
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden dark:bg-slate-800 dark:border-slate-700">
                     
                     <!-- 검색 및 가격 헤더 -->
-                    <div class="p-5 pb-0">
-                        <div class="flex gap-2 mb-6">
-                            <input type="text" id="symbol-input" value="005930" placeholder="종목코드 (예: 005930)"
-                                   class="bg-slate-50 border border-slate-200 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
-                                   onkeypress="if(event.key==='Enter') fetchAllData()">
-                            <button onclick="fetchAllData()" class="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm whitespace-nowrap">조회</button>
-                        </div>
-                        
+                    <div class="flex gap-2 mb-6 p-5 pb-0">
+                        <input type="text" id="symbol-input" value="005930" placeholder="종목코드 (예: 005930)"
+                               class="bg-slate-50 border border-slate-200 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
+                               onkeypress="if(event.key==='Enter') fetchAllData()">
+                        <button onclick="fetchAllData()" class="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm whitespace-nowrap">조회</button>
+                    </div>
+                    
+                    <div class="p-5 pt-0">
                         <!-- 가격 및 즐겨찾기 -->
                         <div class="flex justify-between items-start mb-6">
                             <div>
+                                <!-- ✅ 종목명 표시 -->
+                                <h3 id="main-name" class="text-xl font-bold mb-1 dark:text-white">Loading Name...</h3> 
                                 <div class="flex items-center gap-2 mb-1">
                                     <h2 class="text-3xl font-bold" id="main-price">-</h2>
                                     <button onclick="toggleFavorite()" id="btn-favorite" class="text-slate-300 hover:text-yellow-400 transition-colors text-2xl" title="관심 종목 추가/삭제">
@@ -153,8 +189,10 @@
                                 </div>
                             </div>
                             <!-- 링크 버튼 -->
+                            <!-- ✅ DART 공시 링크 추가 및 레이아웃 정리 -->
                             <div class="flex flex-col gap-2">
                                 <a id="link-naver" href="#" target="_blank" class="px-3 py-2 bg-[#03C75A] text-white rounded-lg text-xs font-bold text-center">네이버 증권</a>
+                                <a id="link-dart" href="#" target="_blank" class="px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold text-center hover:bg-indigo-700">DART 공시 검색</a>
                             </div>
                         </div>
 
@@ -297,7 +335,8 @@
             return Array(count).fill(0).map((_, i) => ({
                 code: `${market.substring(0, 1)}MOCK${codePrefix}${i < 9 ? `0${i + 1}` : `${i + 1}`}`, 
                 name: `${sectorKey.replace(/KOSDAQ |KOSPI |\s*\(.*\)\s*/g, '').replace(/\//g, '·')} M${i + 1}`,
-                change: (Math.random() * 3 - 1.5).toFixed(2) * 1,
+                // Mock Stock은 이제 고정된 등락률을 가집니다.
+                change: (i % 2 === 0 ? 1.0 : -0.5) * (1 + (i % 5) * 0.2), // 고정 등락률 (약간의 변동은 유지)
                 price: Math.floor(Math.random() * 30000) + 10000,
                 market: market,
                 cap: baseCap - i * (Math.random() * 50) - 1, 
@@ -380,12 +419,17 @@
 
         // 시가총액 포맷팅 함수 (억 원 -> 조 원)
         function formatCap(capValue) {
+            // capValue는 억 원 단위의 숫자
+            
+            // 조 단위 (10000억 이상, 즉 1조 원 이상)
             if (capValue >= 10000) {
-                return `${(capValue / 10000).toFixed(1)}조 원`;
+                // 소수점 둘째 자리까지 표시
+                return `${(capValue / 10000).toFixed(2)}조 원`;
             }
+            // 억 단위 (1억 이상 ~ 9999억 이하)
             if (capValue > 0) {
-                // 천 단위 콤마 추가
-                return `${formatNum(capValue)}억 원`; 
+                // 자연수로 표현 (formatNum이 콤마를 추가함)
+                return `${formatNum(Math.floor(capValue))}억 원`; 
             }
             return 'N/A';
         }
@@ -610,31 +654,39 @@
 
                 // 1. Mock OHLC 데이터 생성 (현재 가격과 등락률 기반)
                 const OHLCData = [];
-                const basePrice = price / (1 + change / 100);
+                // basePrice를 현재 price와 change를 역산해서 계산하여 고정된 차트 모양 유지
+                const basePrice = price / (1 + change / 100); 
                 const dailyRange = Math.abs(change) * 1.5; 
                 
                 let minVal = basePrice * 0.98; // 전체 가격 범위 추정치
                 let maxVal = basePrice * 1.02;
 
                 let lastClose = basePrice;
+                // 난수 대신 고정된 패턴을 사용하여 차트가 변하지 않도록 합니다.
+                const fixedRandoms = [0.3, 0.7, 0.5, 0.2, 0.8, 0.4, 0.6, 0.9, 0.1, 0.55, 0.45, 1.0]; 
 
                 for (let i = 0; i < dataPoints; i++) {
+                    const r1 = fixedRandoms[i] * 0.005; // open variation factor
+                    const r2 = fixedRandoms[i] * 0.5 + 0.5; // variance factor
+                    const r3 = fixedRandoms[(i + 1) % dataPoints]; // high/low factor
+                    const r4 = fixedRandoms[(i + 2) % dataPoints]; // close factor
+
                     // 다음 시가 (Open)는 이전 종가(Close) 근처에서 시작
-                    const open = lastClose * (1 + (Math.random() - 0.5) * 0.005); 
+                    const open = lastClose * (1 + (0.5 - r1)); // 고정된 작은 변동 
                     
                     // 변동폭 설정
-                    const variance = dailyRange * (Math.random() * 0.5 + 0.5); 
+                    const variance = dailyRange * r2; 
                     const highLowDiff = open * (variance / 100);
                     
-                    const high = open + highLowDiff * Math.random();
-                    const low = open - highLowDiff * Math.random();
+                    const high = open + highLowDiff * r3;
+                    const low = open - highLowDiff * (1 - r3);
                     
-                    // 종가(Close)는 랜덤하게 결정되지만, 마지막 캔들은 현재 가격으로 수렴
+                    // 종가(Close)는 고정된 패턴으로 수렴하거나 현재 가격으로 고정
                     let close;
                     if (i === dataPoints - 1) {
                          close = price; // 마지막 캔들의 종가는 현재 가격
                     } else {
-                        close = open + (Math.random() - 0.5) * highLowDiff;
+                        close = open + (r4 - 0.5) * highLowDiff;
                     }
 
                     // OHLC 순서 보정
@@ -704,6 +756,45 @@
         // 캔들차트 시뮬레이션 함수 끝
 
 
+        // ✅ [추가] 3D Tilt 효과 관련 JavaScript 함수
+        const TILT_MAX_ROTATE = 10;
+        const TILT_PERSPECTIVE = 800;
+        const BASE_SHADOW_LIGHT = '0 4px 12px rgba(0, 0, 0, 0.1)';
+        const BASE_SHADOW_DARK = '0 4px 12px rgba(255, 255, 255, 0.05)';
+
+        function handleTilt(event, element) {
+            const rect = element.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            // 마우스 위치 (element 중앙 기준)
+            const mouseX = event.clientX - centerX;
+            const mouseY = event.clientY - centerY;
+
+            // Normalize mouse position to [-1, 1] range relative to element size
+            const tiltX = (mouseY / rect.height) * (TILT_MAX_ROTATE * 2); 
+            const tiltY = (mouseX / rect.width) * (TILT_MAX_ROTATE * 2);  
+            
+            // 최종 회전 각도 (마우스가 중앙에서 멀어질수록 커짐)
+            // X축 회전 (수직 기울임)은 Y 좌표 변화에 따라, Y축 회전 (수평 기울임)은 X 좌표 변화에 따라 적용
+            const rotateX = Math.min(Math.max(-TILT_MAX_ROTATE, tiltX), TILT_MAX_ROTATE) * -1;
+            const rotateY = Math.min(Math.max(-TILT_MAX_ROTATE, tiltY), TILT_MAX_ROTATE);
+            
+            // 동적 그림자 적용 (마우스 위치에 따라 그림자 위치 및 크기 변경)
+            const shadowOpacity = 0.2 + (Math.abs(rotateX) + Math.abs(rotateY)) / TILT_MAX_ROTATE * 0.05; // 기울임에 따라 그림자 진하게
+            const isDark = document.documentElement.classList.contains('dark');
+            const shadowColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.2)';
+            
+            element.style.transform = `perspective(${TILT_PERSPECTIVE}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            element.style.boxShadow = `${(tiltY/4).toFixed(1)}px ${(tiltX/4).toFixed(1)}px 30px ${shadowColor}`; 
+        }
+
+        function resetTilt(element) {
+            const isDark = document.documentElement.classList.contains('dark');
+            element.style.transform = `perspective(${TILT_PERSPECTIVE}px) rotateX(0deg) rotateY(0deg)`;
+            element.style.boxShadow = isDark ? BASE_SHADOW_DARK : BASE_SHADOW_LIGHT; 
+        }
+
         // Market Map 필터링 및 렌더링
         function renderMarketMap(filterMode = 'KOSDAQ_TOP_60') {
             // 1. 버튼 활성화/비활성화
@@ -718,38 +809,31 @@
                 }
             });
 
-            // 2. 종목 필터링
-            let filteredSectors = {};
+            // 2. 종목 필터링 및 정렬
             let totalCapBySector = {};
             
             const filterMarket = filterMode === 'KOSPI_TOP_60' ? 'KOSPI' : (filterMode === 'KOSDAQ_TOP_60' ? 'KOSDAQ' : null);
             const maxStocks = filterMode === 'ALL' ? 120 : 60;
 
-            // 모든 섹터의 종목을 하나의 리스트로 모음
             let allStocks = [];
             for (const stocks of Object.values(ALL_MARKET_MAP_STOCKS)) {
                 allStocks.push(...stocks);
             }
             
-            // 1차 필터링: 마켓 모드에 맞는 종목만 남기기
             let marketStocks = allStocks;
             if (filterMarket) {
                 marketStocks = allStocks.filter(s => s.market === filterMarket);
             }
             
-            // 2차 정렬: 시가총액(cap) 순으로 정렬하여 순위를 확정
+            // 시가총액 순으로 정렬하여 순위를 확정
             marketStocks.sort((a, b) => b.cap - a.cap);
-
-            // 3차 제한: Top 60 (또는 ALL 모드 120)까지만 사용
             let topMarketStocks = marketStocks.slice(0, maxStocks);
 
-            // 4차 섹터별 재분배 및 순위 부여
             let finalStocksBySector = {};
             
-            // 시총 순으로 정렬된 종목 리스트를 순회하며 순위 부여
-            topMarketStocks.forEach((stock, index) => {
-                const currentRank = index + 1; // 1부터 순위 시작
-                // 종목이 속한 원래 섹터 찾기
+            topMarketStocks.forEach((stock, index) => { 
+                const currentRank = index + 1;
+                // 종목이 속한 원래 섹터 찾기 (섹터 색상 구분을 위해 필요)
                 const sectorName = Object.keys(ALL_MARKET_MAP_STOCKS).find(key => 
                     ALL_MARKET_MAP_STOCKS[key].some(s => s.code === stock.code && s.market === stock.market)
                 ) || '기타';
@@ -759,23 +843,16 @@
                     totalCapBySector[sectorName] = 0;
                 }
                 
-                // 순위 필드를 정확한 순위로 업데이트
                 stock.rank = currentRank; 
                 finalStocksBySector[sectorName].push(stock);
                 totalCapBySector[sectorName] += stock.cap;
             });
             
-            // 5. 섹터 시총 합계 순으로 정렬 (가장 큰 섹터가 위로)
-            const sortedSectorNames = Object.keys(finalStocksBySector).sort((a, b) => {
-                return totalCapBySector[b] - totalCapBySector[a];
-            });
-
-            // ✅ 섹터별 평균 등락률 계산
+            // 섹터별 평균 등락률 계산 (상대 강도 배지를 위해 필요)
             let sectorPerformance = {};
-            sortedSectorNames.forEach(sectorName => {
+            Object.keys(finalStocksBySector).forEach(sectorName => {
                 const stocks = finalStocksBySector[sectorName];
                 if (stocks.length > 0) {
-                    // 등락률의 합을 종목 수로 나누어 평균 등락률 계산
                     const totalChange = stocks.reduce((sum, s) => sum + s.change, 0);
                     sectorPerformance[sectorName] = totalChange / stocks.length;
                 } else {
@@ -795,130 +872,156 @@
             
             const upBar = document.getElementById('breadth-up-bar');
             upBar.style.width = `${upPercent}%`;
-            upBar.classList.toggle('breadth-bar-red', upPercent > downPercent); // 상승 우위일 때 빨간색
-            upBar.classList.toggle('bg-blue-500', upPercent <= downPercent); // 하락 우위일 때 파란색
+            upBar.classList.toggle('breadth-bar-red', upPercent > downPercent);
+            upBar.classList.toggle('bg-blue-500', upPercent <= downPercent);
             
-            // 6. HTML 렌더링
+            // 3. 모든 종목을 시총 순으로 통합 배치하고 섹터는 테두리 색상으로만 구분
             const container = document.getElementById('market-map-container');
-            let htmlContent = '';
             let globalStockCount = topMarketStocks.length;
 
-            if (sortedSectorNames.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 text-slate-400">선택된 모드(${filterMode})에 해당하는 종목이 없습니다. (현재 Mock Data: ${globalStockCount}개 표시됨)</div>`;
+            if (topMarketStocks.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-slate-400">선택된 모드(${filterMode})에 해당하는 종목이 없습니다.</div>`;
                 return;
             }
             
-            let stockCountMessage = filterMarket ? `${filterMarket} Top 60 중 ${globalStockCount}개 표시됨` : `총 ${globalStockCount}개 표시됨`;
-            
-            // 섹션 헤더에 총 종목 수 표시
-            htmlContent += `<div class="text-sm text-slate-500 dark:text-slate-400 mb-4">${stockCountMessage}</div>`;
+            let stockCountMessage = filterMarket ? `${filterMarket} Top ${maxStocks} 중 ${globalStockCount}개 표시됨` : `총 ${globalStockCount}개 표시됨`;
 
-            sortedSectorNames.forEach(sectorName => {
-                const stocks = finalStocksBySector[sectorName];
-                const sectorAvgChange = sectorPerformance[sectorName] || 0; 
+            let mapContentHtml = `
+                <div class="text-sm text-slate-500 dark:text-slate-400 mb-4">시가총액 순으로 통합 배치 (${stockCountMessage})</div>
+                <div class="bg-white p-4 rounded-xl shadow-xl border border-slate-200 dark:bg-slate-800 dark:border-slate-700">
+                    <div class="grid grid-cols-12 auto-rows-min gap-2">
+            `;
+
+            // Treemap Layout 결정 로직 (순위에 따라 크기 지정)
+            function getStockLayout(rank) {
+                if (rank <= 3) return { span: 'col-span-6 row-span-2', nameSize: 'text-xl', priceSize: 'text-4xl' }; // 초대형주 (가장 크게)
+                if (rank <= 6) return { span: 'col-span-4 row-span-2', nameSize: 'text-lg', priceSize: 'text-3xl' }; // 대형주
+                if (rank <= 10) return { span: 'col-span-3 row-span-1', nameSize: 'text-md', priceSize: 'text-2xl' }; // 중대형주
+                if (rank <= 20) return { span: 'col-span-3 row-span-1', nameSize: 'text-sm', priceSize: 'text-xl' }; // 중형주
+                if (rank <= 40) return { span: 'col-span-2 row-span-1', nameSize: 'text-xs', priceSize: 'text-lg' }; // 소형주
+                // 120개 종목을 모두 표시하기 위해 가장 작은 크기 설정
+                return { span: 'col-span-2 row-span-1', nameSize: 'text-xs', priceSize: 'text-base' }; // 기타
+            }
+
+            // 섹터별 경계선 색상 클래스 매핑 함수 (유지)
+            function getSectorBorderColor(sectorName) {
+                if (sectorName.includes('반도체')) return 'border-sector-red';
+                if (sectorName.includes('2차전지')) return 'border-sector-blue';
+                if (sectorName.includes('완성차')) return 'border-sector-green';
+                if (sectorName.includes('AI') || sectorName.includes('플랫폼')) return 'border-sector-red';
+                if (sectorName.includes('제약') || sectorName.includes('바이오') || sectorName.includes('의료기기')) return 'border-sector-purple';
+                if (sectorName.includes('은행') || sectorName.includes('증권') || sectorName.includes('보험')) return 'border-sector-amber';
+                if (sectorName.includes('식음료')) return 'border-sector-orange';
+                if (sectorName.includes('유통') || sectorName.includes('백화점')) return 'border-sector-indigo';
+                if (sectorName.includes('화학') || sectorName.includes('소재')) return 'border-sector-lime';
+                if (sectorName.includes('게임') || sectorName.includes('엔터')) return 'border-sector-cyan';
+                if (sectorName.includes('컨텐츠')) return 'border-sector-pink';
+                if (sectorName.includes('로봇') || sectorName.includes('자동화')) return 'border-sector-teal';
+                return 'border-slate-500';
+            }
+            
+            // 4. 모든 종목을 순서대로 렌더링
+            topMarketStocks.forEach(stock => {
+                // 해당 종목의 섹터 이름 찾기 (테두리 색상 결정을 위해)
+                const sectorName = Object.keys(ALL_MARKET_MAP_STOCKS).find(key => 
+                    ALL_MARKET_MAP_STOCKS[key].some(s => s.code === stock.code && s.market === stock.market)
+                ) || '기타';
+
+                // ✅ [추가 로직] 섹터 이름 표시 로직
+                let displaySectorName = sectorName;
+                if (stock.rank > 20) { // 작은 카드일 경우 섹터명 축약
+                    // 시장 구분자나 괄호 내용 제거 및 슬래시/점 대체
+                    displaySectorName = sectorName.replace(/KOSPI|KOSDAQ|\(.*\)/g, '').trim().replace(/·/g, '/');
+                    // 아주 작은 카드일 경우 더 짧게 자름
+                    if (stock.rank > 40 && displaySectorName.length > 5) {
+                         displaySectorName = displaySectorName.substring(0, 5) + '...';
+                    }
+                }
                 
-                // 아이콘 및 색상 정의
-                let iconClass = 'fa-regular fa-lightbulb';
-                let titleColor = 'text-slate-600 dark:text-slate-400';
+                // ✅ 시가총액 표시 로직
+                const formattedCap = formatCap(stock.cap);
+
+                const layout = getStockLayout(stock.rank); // 개별 종목 크기 결정
+                const colorClass = getColor(stock.change);
+                const bgColorClass = getColorBg(stock.change);
+                const changeSign = stock.change > 0 ? '▲' : '▼';
                 
-                if (sectorName.includes('2차전지')) { iconClass = 'fa-car-battery'; titleColor = 'text-blue-600 dark:text-blue-400'; }
-                else if (sectorName.includes('반도체')) { iconClass = 'fa-microchip'; titleColor = 'text-red-600 dark:text-red-400'; }
-                else if (sectorName.includes('AI') || sectorName.includes('플랫폼')) { iconClass = 'fa-robot'; titleColor = 'text-red-600 dark:text-red-400'; }
-                else if (sectorName.includes('완성차')) { iconClass = 'fa-car-side'; titleColor = 'text-green-600 dark:text-green-400'; }
-                else if (sectorName.includes('부품')) { iconClass = 'fa-gears'; titleColor = 'text-green-600 dark:text-green-400'; }
-                else if (sectorName.includes('제약') || sectorName.includes('바이오')) { iconClass = 'fa-dna'; titleColor = 'text-purple-600 dark:text-purple-400'; }
-                else if (sectorName.includes('의료기기')) { iconClass = 'fa-heart-pulse'; titleColor = 'text-purple-600 dark:text-purple-400'; }
-                else if (sectorName.includes('은행') || sectorName.includes('증권')) { iconClass = 'fa-money-bill-trend-up'; titleColor = 'text-amber-600 dark:text-amber-400'; }
-                else if (sectorName.includes('식음료')) { iconClass = 'fa-burger'; titleColor = 'text-orange-600 dark:text-orange-400'; }
-                else if (sectorName.includes('유통')) { iconClass = 'fa-store'; titleColor = 'text-indigo-600 dark:text-indigo-400'; }
-                else if (sectorName.includes('화학')) { iconClass = 'fa-flask'; titleColor = 'text-lime-600 dark:text-lime-400'; }
-                else if (sectorName.includes('게임') || sectorName.includes('엔터')) { iconClass = 'fa-gamepad'; titleColor = 'text-cyan-600 dark:text-cyan-400'; }
-                else if (sectorName.includes('컨텐츠')) { iconClass = 'fa-tv'; titleColor = 'text-pink-600 dark:text-pink-400'; }
-                else if (sectorName.includes('로봇')) { iconClass = 'fa-gears'; titleColor = 'text-teal-600 dark:text-teal-400'; }
+                const sectorBorderClass = getSectorBorderColor(sectorName);
                 
-                const sectorTotalCap = totalCapBySector[sectorName];
+                const marketBadge = stock.market === 'KOSDAQ' ? '<span class="text-[10px] text-blue-400 ml-1"> (Q)</span>' : '';
                 
-                htmlContent += `
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 dark:bg-slate-800 dark:border-slate-700">
-                        <div class="flex justify-between items-center mb-3">
-                            <h3 class="font-bold text-lg flex items-center gap-2 ${titleColor}">
-                                <i class="fa-solid ${iconClass}"></i> ${sectorName} (${stocks.length}개)
-                            </h3>
-                            <div class="text-sm text-slate-500 dark:text-slate-400">시총합: ${formatNum(sectorTotalCap)}억원</div>
+                // 순위 배지
+                const isTop3 = stock.rank <= 3;
+                const rankBadgeClass = isTop3 ? 'bg-red-500' : 'bg-orange-500';
+                const rankAnimationClass = isTop3 ? 'rank-pop' : '';
+                const rankDisplay = `<span class="text-[10px] text-white font-bold px-2 py-0.5 rounded-full ${rankBadgeClass} ${rankAnimationClass}">${stock.rank}위</span>`;
+                
+                // 상대 강도 배지 (섹터 평균을 찾기 위해 다시 계산)
+                const currentSectorPerf = sectorPerformance[sectorName] || 0;
+                const relativeStrength = stock.change - currentSectorPerf;
+                let strengthBadge = '';
+                if (relativeStrength > 0.5) {
+                    strengthBadge = `<span class="ml-1 text-[10px] font-bold text-white bg-green-500 px-1 py-0.5 rounded-full" title="섹터 평균 대비 +${relativeStrength.toFixed(2)}% 강세">강세</span>`;
+                } else if (relativeStrength < -0.5) {
+                    strengthBadge = `<span class="ml-1 text-[10px] font-bold text-white bg-indigo-500 px-1 py-0.5 rounded-full" title="섹터 평균 대비 ${relativeStrength.toFixed(2)}% 약세">약세</span>`;
+                } else {
+                    strengthBadge = `<span class="ml-1 text-[10px] font-medium text-slate-400" title="섹터 평균과 유사">중립</span>`;
+                }
+
+                mapContentHtml += `
+                    <div onclick="document.getElementById('symbol-input').value='${stock.code}'; fetchAllData()" 
+                         onmousemove="handleTilt(event, this)"
+                         onmouseout="resetTilt(this)"
+                         class="${layout.span} p-2 rounded-lg treemap-card-3d border-2 ${sectorBorderClass} cursor-pointer ${bgColorClass} hover:ring-2 hover:ring-blue-400 dark:border-slate-700 flex flex-col justify-between">
+                        
+                        <!-- Top Line: Name and Rank -->
+                        <div class="flex justify-between items-start mb-0.5">
+                            <div class="font-bold ${layout.nameSize} text-slate-800 dark:text-slate-100 leading-tight">
+                                ${stock.name}${marketBadge}
+                            </div>
+                            ${rankDisplay}
                         </div>
                         
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                            ${stocks.map(stock => {
-                                const colorClass = getColor(stock.change);
-                                const bgColorClass = getColorBg(stock.change);
-                                const changeSign = stock.change > 0 ? '▲' : '▼';
-                                
-                                // KOSDAQ 종목에만 (Q) 표시
-                                const marketBadge = stock.market === 'KOSDAQ' ? '<span class="text-[10px] text-blue-400 ml-1"> (Q)</span>' : '';
-                                
-                                // 순위 표시
-                                const isTop20 = stock.rank <= 20;
-                                const isTop3 = stock.rank <= 3;
+                        <!-- ✅ 섹터 이름 -->
+                        <div class="text-[10px] text-slate-500 dark:text-slate-400 leading-none mb-1">
+                            ${displaySectorName}
+                        </div>
 
-                                const rankBadgeClass = isTop3 ? 'bg-red-500' : (isTop20 ? 'bg-orange-500' : 'bg-amber-500');
-                                const rankAnimationClass = isTop20 ? 'rank-pop' : '';
-                                const rankDisplay = `<span class="text-[10px] text-white font-bold px-2 py-0.5 rounded-full ${rankBadgeClass} ${rankAnimationClass}">${isTop3 ? 'T' : ''}${stock.rank}위</span>`;
-                                
-                                // ✅ 상대 강도 배지 생성 로직
-                                const relativeStrength = stock.change - sectorAvgChange;
-                                let strengthBadge = '';
-                                
-                                if (relativeStrength > 0.5) {
-                                    strengthBadge = `<span class="ml-1 text-[10px] font-bold text-white bg-green-500 px-1 py-0.5 rounded-full" title="섹터 평균 대비 +${relativeStrength.toFixed(2)}% 강세">강세</span>`;
-                                } else if (relativeStrength < -0.5) {
-                                    strengthBadge = `<span class="ml-1 text-[10px] font-bold text-white bg-indigo-500 px-1 py-0.5 rounded-full" title="섹터 평균 대비 ${relativeStrength.toFixed(2)}% 약세">약세</span>`;
-                                } else {
-                                    strengthBadge = `<span class="ml-1 text-[10px] font-medium text-slate-400" title="섹터 평균과 유사">중립</span>`;
-                                }
-                                
-                                return `
-                                    <div onclick="document.getElementById('symbol-input').value='${stock.code}'; fetchAllData()" 
-                                         class="market-card p-3 rounded-xl shadow-sm border border-slate-200 cursor-pointer ${bgColorClass} hover:ring-2 hover:ring-blue-400 dark:border-slate-700 transition-all">
-                                        
-                                        <div class="flex justify-between items-start mb-1">
-                                            <div class="font-bold text-sm text-slate-700 dark:text-slate-100">${stock.name}${marketBadge}</div>
-                                            ${rankDisplay}
-                                        </div>
-                                        
-                                        <!-- 시가총액 정보 -->
-                                        <div class="text-xs text-slate-500 dark:text-slate-400 mb-1">시총: ${formatCap(stock.cap)}</div>
-
-                                        <div class="font-extrabold text-xl dark:text-white">${formatNum(stock.price)}</div>
-                                        
-                                        <!-- 상대 강도 배지 -->
-                                        <div class="text-xs ${colorClass} mt-1 flex items-center justify-between">
-                                            <div>${changeSign} ${formatNum(stock.change)}%</div>
-                                            ${strengthBadge} 
-                                        </div>
-                                        
-                                        <div class="text-[10px] text-slate-400 mt-1">${stock.code}</div> <!-- 코드 추가 -->
-                                    </div>
-                                `;
-                            }).join('')}
+                        <!-- Price -->
+                        <div class="font-extrabold ${layout.priceSize} dark:text-white leading-none mt-1">
+                            ${formatNum(stock.price)}
+                        </div>
+                        
+                        <!-- Change and Strength -->
+                        <div class="text-xs ${colorClass} mt-1 flex items-center justify-between">
+                            <div>${changeSign} ${formatNum(stock.change)}%</div>
+                            ${strengthBadge} 
+                        </div>
+                        
+                        <!-- Details: Code & Market Cap -->
+                        <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 flex justify-between">
+                            <span>${stock.code}</span>
+                            <!-- ✅ 시가총액 (억 원/조 원, 조단위는 소수점 둘째자리) -->
+                            <span class="font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">${formattedCap}</span> 
                         </div>
                     </div>
                 `;
             });
 
-            container.innerHTML = htmlContent;
+            mapContentHtml += `</div></div>`;
+            container.innerHTML = mapContentHtml;
         }
 
 
-        // ✅ 새로운 Mock 커뮤니티 데이터 생성 함수
+        // ✅ 새로운 Mock 커뮤니티 데이터 생성 함수 (로직 유지)
         function getMockCommunityData(symbol, name) {
-            // 현재 시간을 기반으로 시뮬레이션된 랜덤성을 부여
-            const randomSeed = Math.floor(Math.random() * 1000) + new Date().getMinutes() * 10; 
             const isUp = getMockData(symbol).change > 0;
+            const randomSeed = 100; // 고정된 값
             
             const bestTitles = [
-                `${name} 폭등 신호! 기관 매수 포착. (V.${randomSeed % 5 + 1})`,
+                `${name} 폭등 신호! 기관 매수 포착. (V.3)`,
                 `[HOT] ${name} vs 경쟁사, 하반기 전망 심층 분석 리포트`,
-                `장기 관점에서 보면 지금은 절호의 ${isUp ? '매수' : '관망'} 기회 (W.${randomSeed % 7 + 1})`,
+                `장기 관점에서 보면 지금은 절호의 ${isUp ? '매수' : '관망'} 기회 (W.5)`,
             ];
 
             const latestTitles = [
@@ -1025,6 +1128,7 @@
                 const currencyCode = index.id.split('=')[0];
                 if (currentRates[currencyCode]) {
                     // KRW=X만 INDICES에 있으므로, 이 지표가 업데이트 될 때만 calculateExchange를 호출
+                    // KRW=X Mock 데이터가 고정값으로 설정되었으므로, currentRates도 고정됨
                     currentRates[currencyCode].rate = data.price;
                     if (index.id === 'KRW=X') { 
                         updateCurrencyRate();
@@ -1032,11 +1136,7 @@
                 }
                 updateIndexUI(index.id, data); 
 
-                // Mock Rate 사용 시 currentRates 업데이트
-                if (index.id === 'KRW=X') {
-                    currentRates['USD'].rate = getMockData('KRW=X').price; // Mock Rate 갱신
-                    updateCurrencyRate();
-                }
+                // Mock Rate 사용 시 currentRates 업데이트 (고정값 사용)
                 if (currentRates['EUR']) currentRates['EUR'].rate = getMockData('EUR=X').price;
                 if (currentRates['JPY']) currentRates['JPY'].rate = getMockData('JPY=X').price;
             });
@@ -1073,9 +1173,60 @@
                 priceElem.className = `font-bold text-sm ${getColor(data.change)}`;
             }
         }
+
+        // ✅ [수정] 당일 주요 공시 Mock 데이터 생성 함수 (랜덤성 제거)
+        function getMajorDisclosure(data) {
+            // 등락률은 getMockData에서 고정된 값으로 가져옴
+            const isSignificant = Math.abs(data.change_percent) >= 1.5; 
+            const isPositive = data.change_percent > 0;
+            const seed = 5; // 고정된 시드값 사용 (랜덤성 제거)
+            
+            let badgeClass, badgeText, title, time;
+
+            if (isSignificant) {
+                // 등락폭이 클 경우 시세 방향에 맞춰 긍정/부정 공시 생성
+                if (isPositive) {
+                    badgeClass = "bg-red-500 border-red-700 text-red-700 dark:text-red-300 dark:border-red-500";
+                    badgeText = "호재 (HOT)";
+                    if (seed % 3 === 0) {
+                        title = `[공시] ${data.name}, 사상 최대 규모 ${data.change_percent.toFixed(0)}% 무상증자 결정 (매우 긍정적)`;
+                    } else if (seed % 3 === 1) {
+                        title = `[공시] 1000억 규모 신규 시설 투자 발표, 미래 성장 동력 확보`;
+                    } else {
+                        title = `[공시] 창사 이래 최대치 ${data.change_percent.toFixed(1)}% 영업이익 잠정 발표 (깜짝 실적)`;
+                    }
+                } else {
+                    badgeClass = "bg-blue-500 border-blue-700 text-blue-700 dark:text-blue-300 dark:border-blue-500";
+                    badgeText = "악재 (DANGER)";
+                    if (seed % 3 === 0) {
+                        title = `[공시] 전환사채(CB) 500억 규모 발행 결정... 주식 희석 우려`;
+                    } else if (seed % 3 === 1) {
+                        title = `[공시] 대표이사 횡령 배임설 조회 공시 요구 (확인 중)`;
+                    } else {
+                        title = `[공시] 3분기 잠정 실적, 시장 컨센서스 대비 30% 미달 예상`;
+                    }
+                }
+            } else {
+                // 등락폭이 작을 경우 중립적인 공시 생성
+                badgeClass = "bg-slate-500 border-slate-700 text-slate-700 dark:text-slate-300 dark:border-slate-500";
+                badgeText = "주요 공시";
+                if (seed % 2 === 0) {
+                    title = `[공시] ${data.name}, 정기 주주총회 소집 결의`;
+                } else {
+                    title = `[공시] 최대주주 주식담보대출 비율 변경 신고 (단순 공시)`;
+                }
+            }
+            
+            // 시간도 고정된 시각으로 처리 (14:30)
+            time = "14:30";
+
+            return { badgeClass, badgeText, title, time };
+        }
         
         function renderMain(data) {
             currentSymbol = data.symbol;
+            // ✅ [수정] 종목명 표시 (이전 오류 해결)
+            document.getElementById('main-name').textContent = data.name; 
             document.getElementById('main-symbol').textContent = data.symbol;
             document.getElementById('main-price').textContent = formatNum(data.price);
             document.getElementById('main-price').className = `text-3xl font-bold dark:text-white ${getColor(data.change)}`;
@@ -1084,6 +1235,11 @@
             
             // 네이버 증권 링크 업데이트
             document.getElementById('link-naver').href = !isNaN(data.symbol) ? `https://finance.naver.com/item/main.naver?code=${data.symbol}` : `https://finance.yahoo.com/quote/${data.symbol}`;
+
+            // ✅ DART 공시 검색 링크 업데이트 (종목코드 기반 검색)
+            const stockName = ALL_MARKET_MAP_STOCKS['반도체(메모리/파운드리)'].find(s => s.code === currentSymbol)?.name || '';
+            const dartQuery = `${stockName} ${currentSymbol}`;
+            document.getElementById('link-dart').href = `https://dart.fss.or.kr/dsac001/mainK.do?textCrpNm=${dartQuery}&autoSearch=true`;
 
             // 시총 및 순위 정보 가져오기
             const stockDetails = getStockDetailsBySymbol(currentSymbol);
@@ -1109,62 +1265,92 @@
 
             const newsBox = document.getElementById('content-news');
             
-            // ✅ 동적으로 Mock News Data 생성 및 등락률 반영
+            // 1. ✅ [추가] 주요 공시 Mock 생성
+            const majorDisclosure = getMajorDisclosure(data);
+            const majorDisclosureHTML = `
+                <a href="https://dart.fss.or.kr/" target="_blank" class="block p-4 rounded-lg major-disclosure-card border-2 ${majorDisclosure.badgeClass}"
+                   title="실제 공시가 아닙니다. DART에서 확인하세요.">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-extrabold text-white px-2 py-0.5 rounded-full ${majorDisclosure.badgeClass.replace(/border-.*|text-.*/g, '').trim()}">
+                            ${majorDisclosure.badgeText}
+                        </span>
+                        <span class="text-xs text-slate-400 font-normal ml-auto">${majorDisclosure.time}</span>
+                    </div>
+                    <div class="font-extrabold text-lg text-slate-900 dark:text-white leading-snug">
+                        ${majorDisclosure.title}
+                    </div>
+                </a>
+            `;
+
+            // 2. 일반 Mock News Data 생성 및 등락률 반영
             const newsData = [
-                { title: `[모의뉴스] ${data.name}의 ${formatNum(data.price)}원 ${data.change > 0 ? '돌파 임박!' : '하락 압력 경고'}`, publisher: '모의경제', link: '#' },
-                { title: `[모의뉴스] ${data.name} ${data.change > 0 ? '외국인 순매수 지속' : '차익 실현 출회'} 분석`, publisher: '모의뉴스24', link: '#' },
-                { title: `[모의뉴스] ${data.name} 관련 ${data.change > 0 ? '호재성' : '리스크'} 보고서 발표 (시뮬레이션)`, publisher: '가상투자일보', link: '#' },
+                { title: `[모의뉴스] ${data.name}의 ${formatNum(data.price)}원 ${data.change > 0 ? '돌파 임박!' : '하락 압력 경고'} (고정된 뉴스)`, publisher: '모의경제', link: '#' },
+                { title: `[모의뉴스] ${data.name} ${data.change > 0 ? '외국인 순매수 지속' : '차익 실현 출회'} 분석 (고정된 뉴스)`, publisher: '모의뉴스24', link: '#' },
+                { title: `[모의뉴스] ${data.name} 관련 ${data.change > 0 ? '호재성' : '리스크'} 보고서 발표 (고정된 뉴스)`, publisher: '가상투자일보', link: '#' },
             ];
 
+            let regularNewsHTML = '';
             if(newsData.length) {
-                newsBox.innerHTML = newsData.map(n => `
+                regularNewsHTML = newsData.map(n => `
                     <a href="${n.link}" target="_blank" class="block p-3 bg-slate-50 rounded-lg hover:bg-slate-100 border border-slate-100 dark:bg-slate-700 dark:border-slate-600">
                         <div class="font-bold text-sm text-slate-800 dark:text-white truncate">${n.title}</div>
                         <div class="text-xs text-slate-400 mt-1">${n.publisher}</div>
                     </a>
                 `).join('');
-            } else {
+            }
+
+            // 3. 주요 공시 + 일반 뉴스 합쳐서 렌더링
+            newsBox.innerHTML = majorDisclosureHTML + regularNewsHTML;
+            if (newsBox.innerHTML === '') {
                 newsBox.innerHTML = '<div class="text-center py-4 text-xs text-slate-400">뉴스가 없습니다.</div>';
             }
         }
 
+        // === [수정] Mock Data 생성 헬퍼 함수: 고정된 '어제 종가' 데이터를 반환합니다. ===
         function getMockData(symbol, name = '') {
-            // Mock 데이터 생성 시, Math.random()을 사용하여 가격을 미세하게 변화시킵니다.
-            const randomFactor = Math.random() * 0.05 - 0.025; // -2.5% ~ +2.5% 사이의 작은 변동
-            // 등락률을 조금 더 크게 줘서 변화가 눈에 띄도록 조정 (이전 2% -> 3% 범위)
-            const randomChangePercent = (Math.random() * 3 - 1.5); 
-            let basePrice = 1000;
-            
-            if(symbol.includes('KS11')) basePrice = 2500;
-            else if(symbol.includes('NQ')) basePrice = 18000;
-            
-            // 현물 심볼에 대한 Mock 데이터 조정
-            if (symbol === 'XAG=X') basePrice = 25.00; // Silver Spot Price Mock
-            
-            // 환율 Mock Data 제공 (계산기 로직 유지를 위함)
-            if(symbol === 'KRW=X') basePrice = 1350;
-            else if(symbol === 'EUR=X') basePrice = 1450;
-            else if(symbol === 'JPY=X') basePrice = 950; // 100엔당 950원 가정 (API가 100엔당 가격을 보낸다고 가정)
-            
-            // 가격을 임의로 약간 변동시켜서 실시간 갱신처럼 보이게 합니다.
-            const price = basePrice * (1 + randomFactor + randomChangePercent / 100);
+            let basePrice = 1000; // 기준 가격 (어제 종가)
+            let fixedChangePercent = 0; // 어제 대비 등락률 (고정값)
+            const fixedChangeFactor = 1.0; // 랜덤 대신 사용할 고정 변동 요소
 
-            // 종목 이름은 Mock Stocks에서 가져와서 Mock Data에 포함합니다.
-            let stockName = name;
+            // 1. 주요 지표에 대한 고정값 설정
+            if (symbol === '^KS11') { basePrice = 2700; fixedChangePercent = 0.5; }
+            else if (symbol === '^KQ11') { basePrice = 880; fixedChangePercent = 1.2; }
+            else if (symbol === 'NQ=F') { basePrice = 18500; fixedChangePercent = -0.8; }
+            else if (symbol === 'KRW=X') { basePrice = 1350; fixedChangePercent = -0.1; }
+            else if (symbol === 'BTC-KRW') { basePrice = 95000000; fixedChangePercent = 3.5; }
+            else if (symbol === 'XAG=X') { basePrice = 24.50; fixedChangePercent = 0.7; }
+            // 환율 Mock Data 제공 (계산기 로직 유지를 위함)
+            else if(symbol === 'EUR=X') { basePrice = 1450; fixedChangePercent = 0.0; } 
+            else if(symbol === 'JPY=X') { basePrice = 950; fixedChangePercent = -0.5; } // 100엔당
+
+            // 2. 시장 지도 종목의 경우 ALL_MARKET_MAP_STOCKS의 고정된 price와 change를 사용
+            let stock = null;
             for (const sector in ALL_MARKET_MAP_STOCKS) {
                 const found = ALL_MARKET_MAP_STOCKS[sector].find(s => s.code === symbol);
                 if (found) {
-                    stockName = found.name;
+                    stock = found;
+                    // Mock Stock List에 있는 등락률을 고정값으로 사용하고, price를 오늘 가격으로 간주
+                    fixedChangePercent = stock.change; 
+                    // basePrice는 (오늘 가격) / (1 + 등락률) 로 역산하여 어제 종가처럼 보이게 함
+                    basePrice = stock.price / (1 + fixedChangePercent / 100); 
                     break;
                 }
+                // Mock Stock이 없는 경우에도 기본값을 사용하도록 함
             }
+
+            // 고정된 오늘 가격 계산
+            const price = stock ? stock.price : (basePrice * (1 + fixedChangePercent / 100));
+            const change = price - basePrice;
+            
+            // 종목 이름은 Mock Stocks에서 가져와서 Mock Data에 포함합니다.
+            let stockName = stock ? stock.name : (name || symbol);
 
             return {
                 symbol: symbol,
-                name: stockName || symbol, // 이름이 없으면 코드로 대체
+                name: stockName,
                 price: price,
-                change: price - basePrice,
-                change_percent: randomChangePercent,
+                change: change,
+                change_percent: fixedChangePercent,
                 news: [],
                 dart_url: null,
                 is_mock: true
@@ -1182,10 +1368,10 @@
             refreshIcon.className = 'fa-solid fa-spinner fa-spin text-blue-600';
             refreshIcon.classList.remove('text-slate-500');
 
-            // 데이터 갱신 시작
+            // 데이터 갱신 시작 (고정된 데이터가 다시 로드됨)
             fetchMarketData();
 
-            // 1초 후 스피너 멈춤 및 버튼 재활성화 (Mock 데이터는 즉시 로드되므로 시각적 피드백을 위해 딜레이)
+            // 1초 후 스피너 멈춤 및 버튼 재활성화 
             setTimeout(() => {
                 refreshButton.disabled = false;
                 refreshIcon.className = 'fa-solid fa-arrows-rotate';
@@ -1215,9 +1401,8 @@
             // 초기 로드
             fetchAllData(); 
             
-            // ✅ [수정] 가격 정보 자동 갱신 주기를 3분(180초)으로 변경 (180000ms)
-            // Mock 데이터를 사용하므로, 3분마다 값이 미세하게 변동하여 갱신되는 것처럼 보입니다.
-            setInterval(fetchMarketData, 180000); 
+            // ✅ [제거] 자동 갱신 기능을 제거합니다. (3분 자동 갱신 제거)
+            // setInterval(fetchMarketData, 180000); 
         }
         
         init();

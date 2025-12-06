@@ -1,8 +1,25 @@
 {
-  "rewrites": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/api/realtime.py"
+      "src": "index.html",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "." }
+    },
+    {
+      "src": "api/news.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/news",
+      "dest": "api/news.js",
+      "methods": ["POST"]
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }

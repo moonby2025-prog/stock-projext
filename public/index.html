@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Dashboard Pro</title>
+    <title>Market Map Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script>
@@ -17,14 +17,39 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
         
-        /* 탭 스타일 */
+        /* 메인 탭 스타일 */
         .tab-btn { border-bottom: 2px solid transparent; color: #64748b; transition: all 0.2s; }
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 700; }
         .dark .tab-btn.active { border-bottom: 2px solid #60a5fa; color: #60a5fa; }
-        
+
         /* 베스트글 강조 효과 */
         .best-post-card { background: linear-gradient(to right, #fef2f2, #fff); border-left: 3px solid #ef4444; }
         .dark .best-post-card { background: linear-gradient(to right, #450a0a, #1e293b); border-left: 3px solid #f87171; }
+        
+        /* 마켓맵 카드 스타일 */
+        .market-card { min-height: 120px; transition: all 0.15s; }
+
+        /* 순위 스티커 애니메이션 */
+        .rank-pop {
+            animation: rankPop 1.5s infinite;
+        }
+        @keyframes rankPop {
+            0%, 100% { transform: scale(1); box-shadow: none; }
+            50% { 
+                transform: scale(1.08); 
+                box-shadow: 0 0 10px rgba(239, 68, 68, 0.8); /* 붉은색 그림자 */
+            }
+        }
+        /* 시장 심도 표시를 위한 클래스 */
+        .breadth-bar-container { height: 12px; background-color: #3b82f6; } /* Tailwind blue-500 */
+        .breadth-bar-red { background-color: #ef4444; } /* Tailwind red-500 */
+
+        /* 캔버스 기본 스타일 (반응형 설정) */
+        #stock-chart-canvas {
+            width: 100%;
+            height: 150px;
+            display: block;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 transition-colors duration-200 dark:bg-slate-900 dark:text-slate-100">
@@ -35,8 +60,9 @@
             <div class="flex items-center gap-2">
                 <i class="fa-solid fa-chart-line text-blue-600 text-xl dark:text-blue-400"></i>
                 <h1 class="font-bold text-xl tracking-tight">Market Dashboard</h1>
-                <span class="flex items-center gap-1 text-xs font-medium bg-red-100 text-red-600 px-2 py-0.5 rounded-full animate-pulse dark:bg-red-900 dark:text-red-200">LIVE</span>
+                <span id="status-badge" class="flex items-center gap-1 text-xs font-medium bg-red-100 text-red-600 px-2 py-0.5 rounded-full animate-pulse dark:bg-red-900 dark:text-red-200">LIVE</span>
             </div>
+            
             <div class="flex items-center gap-4">
                 <button onclick="toggleDarkMode()" class="p-2"><i id="theme-icon" class="fa-solid fa-moon"></i></button>
             </div>
@@ -45,40 +71,100 @@
 
     <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
         
-        <!-- 1. 지표 카드 -->
+        <!-- 1. 주요 지표 카드 섹션: 6개만 표시되도록 INDICES 상수를 수정했습니다. -->
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3" id="indices-container">
-            <!-- JS 로드 -->
+            <!-- 지표 카드들은 JS로 로드됩니다. -->
         </div>
 
+        <!-- 2. 2단 레이아웃: Market Map (좌) vs Detail Panel (우) -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- 왼쪽: 메인 패널 (2/3) -->
+            
+            <!-- 왼쪽: 시장 지도 (Market Map, 2/3 차지) -->
             <div class="lg:col-span-2 space-y-6">
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+                
+                <!-- Market Map 필터 버튼 -->
+                <div class="flex justify-between items-center text-slate-700 dark:text-slate-300">
+                    <h2 class="text-xl font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-globe text-green-500"></i> 시장 지도 (Market Map)
+                    </h2>
+                    <div class="flex gap-2 text-sm">
+                        <button id="filter-all" onclick="renderMarketMap('ALL')" class="px-3 py-1 rounded-full text-xs font-medium border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">전체모드</button>
+                        <button id="filter-kospi_top_60" onclick="renderMarketMap('KOSPI_TOP_60')" class="px-3 py-1 rounded-full text-xs font-medium border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">KOSPI Top 60</button>
+                        <button id="filter-kosdaq_top_60" onclick="renderMarketMap('KOSDAQ_TOP_60')" class="px-3 py-1 rounded-full text-xs font-medium bg-blue-600 text-white hover:bg-blue-700">KOSDAQ Top 60</button>
+                    </div>
+                </div>
+                
+                <!-- 시장 심도 (Market Breadth) Indicator -->
+                <div id="market-breadth-indicator" class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 dark:bg-slate-800 dark:border-slate-700">
+                    <div class="flex justify-between items-center text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">
+                        <span class="flex items-center gap-1 text-blue-500"><i class="fa-solid fa-arrow-down"></i> 하락 종목 수: <span id="breadth-down-count">-</span></span>
+                        <span class="text-xs text-slate-500">시장 심도</span>
+                        <span class="flex items-center gap-1 text-red-500"><i class="fa-solid fa-arrow-up"></i> 상승 종목 수: <span id="breadth-up-count">-</span></span>
+                    </div>
+                    <div class="breadth-bar-container rounded-full overflow-hidden">
+                        <div id="breadth-up-bar" class="h-full breadth-bar-red" style="width: 50%;"></div>
+                    </div>
+                </div>
+
+
+                <!-- 섹터별 종목 그룹 컨테이너 -->
+                <div id="market-map-container" class="space-y-6">
+                    <div class="text-center py-10 text-slate-400">시총 순으로 종목들을 불러오는 중...</div>
+                </div>
+            </div>
+
+            <!-- 오른쪽: 상세 정보 및 도구 패널 (1/3 차지) -->
+            <div class="lg:col-span-1 space-y-6">
+                
+                <!-- 1. 종목 상세 정보 (검색 + 탭) -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden dark:bg-slate-800 dark:border-slate-700">
                     
-                    <!-- 검색 및 가격 -->
-                    <div class="p-6 pb-0">
+                    <!-- 검색 및 가격 헤더 -->
+                    <div class="p-5 pb-0">
                         <div class="flex gap-2 mb-6">
-                            <input type="text" id="symbol-input" value="005930" class="bg-slate-50 border border-slate-200 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600" onkeypress="if(event.key==='Enter') fetchAllData()">
-                            <button onclick="fetchAllData()" class="bg-blue-600 text-white rounded-lg px-5 py-2.5 text-sm">조회</button>
+                            <input type="text" id="symbol-input" value="005930" placeholder="종목코드 (예: 005930)"
+                                   class="bg-slate-50 border border-slate-200 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
+                                   onkeypress="if(event.key==='Enter') fetchAllData()">
+                            <button onclick="fetchAllData()" class="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm whitespace-nowrap">조회</button>
                         </div>
                         
+                        <!-- 가격 및 즐겨찾기 -->
                         <div class="flex justify-between items-start mb-6">
                             <div>
-                                <h2 class="text-3xl font-bold" id="main-price">-</h2>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <h2 class="text-3xl font-bold" id="main-price">-</h2>
+                                    <button onclick="toggleFavorite()" id="btn-favorite" class="text-slate-300 hover:text-yellow-400 transition-colors text-2xl" title="관심 종목 추가/삭제">
+                                        <i class="fa-solid fa-star"></i>
+                                    </button>
+                                </div>
                                 <div class="flex items-end gap-2">
                                     <div class="text-lg font-medium" id="main-change">-</div>
                                     <div class="text-sm text-slate-400 mb-1" id="main-symbol">Loading...</div>
                                 </div>
+                                <!-- 시총 및 순위 정보가 삽입될 영역 -->
+                                <div id="stock-meta-info" class="mt-3">
+                                    <!-- JS에 의해 채워짐 (시총, 순위 정보) -->
+                                </div>
                             </div>
+                            <!-- 링크 버튼 -->
                             <div class="flex flex-col gap-2">
-                                <a id="link-naver" href="#" target="_blank" class="px-4 py-2 bg-[#03C75A] text-white rounded-lg text-xs font-bold text-center">네이버 증권</a>
+                                <a id="link-naver" href="#" target="_blank" class="px-3 py-2 bg-[#03C75A] text-white rounded-lg text-xs font-bold text-center">네이버 증권</a>
                             </div>
                         </div>
 
-                        <!-- 탭 메뉴 -->
+                        <!-- 캔들차트 캔버스 -->
+                        <div class="relative mb-5 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
+                            <canvas id="stock-chart-canvas"></canvas>
+                            <div id="chart-loading" class="absolute inset-0 flex items-center justify-center text-slate-400 text-sm bg-slate-50/80 dark:bg-slate-700/80">
+                                차트 데이터를 불러오는 중...
+                            </div>
+                        </div>
+
+
+                        <!-- 탭 메뉴 (뉴스/커뮤니티) -->
                         <div class="flex border-b border-slate-200 dark:border-slate-700">
                             <button onclick="switchTab('news')" id="tab-news" class="tab-btn active flex-1 py-3 text-sm font-medium">
-                                <i class="fa-regular fa-newspaper mr-1"></i> 주요 뉴스
+                                <i class="fa-regular fa-newspaper mr-1"></i> 뉴스
                             </button>
                             <button onclick="switchTab('community')" id="tab-community" class="tab-btn flex-1 py-3 text-sm font-medium">
                                 <i class="fa-solid fa-fire mr-1 text-red-500"></i> 토론방 (BEST)
@@ -87,68 +173,384 @@
                     </div>
 
                     <!-- 탭 콘텐츠 영역 -->
-                    <div class="p-6 min-h-[300px]">
+                    <div class="p-5 min-h-[250px] max-h-[500px] overflow-y-auto">
+                        
                         <!-- 1. 뉴스 탭 -->
                         <div id="content-news" class="space-y-3">
                             <div class="text-center text-slate-400 py-10">데이터 로딩 중...</div>
                         </div>
 
-                        <!-- 2. 커뮤니티 탭 -->
+                        <!-- 2. 커뮤니티 탭 (BEST 기능) -->
                         <div id="content-community" class="hidden space-y-4">
-                            <!-- [NEW] 실시간 베스트 섹션 (강조됨) -->
-                            <div class="mb-6">
-                                <h4 class="text-sm font-bold text-red-500 mb-3 flex items-center">
+                            <!-- 실시간 베스트 섹션 -->
+                            <div class="mb-4">
+                                <h4 class="text-sm font-bold text-red-500 mb-2 flex items-center">
                                     <i class="fa-solid fa-crown mr-2"></i> 실시간 인기글 (Top 5)
                                 </h4>
                                 <div id="best-community-list" class="space-y-2">
                                     <!-- 베스트글 5개 들어갈 곳 -->
                                 </div>
                             </div>
-
                             <hr class="border-slate-100 dark:border-slate-700 my-4">
-
-                            <!-- 일반 최신글 섹션 -->
-                            <h4 class="text-xs font-bold text-slate-500 mb-2">⏱️ 실시간 최신순</h4>
+                            <!-- 최신글 섹션 -->
+                            <h4 class="text-xs font-bold text-slate-500 mb-2">⏱️ 최신글</h4>
                             <div id="latest-community-list" class="space-y-2">
                                 <!-- 최신글 리스트 -->
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- 오른쪽: 순위 (1/3) -->
-            <div class="space-y-6">
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-700 h-[500px] flex flex-col">
+                <!-- 4. 나의 관심 종목 위젯 -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-700 overflow-hidden">
                     <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-700/50">
-                        <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm"><i class="fa-solid fa-trophy text-yellow-500 mr-1"></i> 시가총액 순위</h3>
+                        <h3 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-star text-yellow-400"></i> 나의 관심 종목
+                        </h3>
                     </div>
-                    <div id="ranking-container" class="overflow-y-auto flex-1 p-2 space-y-1">
-                        <!-- 랭킹 리스트 -->
+                    <!-- 오류 해결을 위해 ID 추가 -->
+                    <div id="watchlist-container" class="divide-y divide-slate-100 dark:divide-slate-700 max-h-[300px] overflow-y-auto">
+                        <div class="p-4 text-center text-xs text-slate-400">★ 버튼을 눌러 종목을 추가해보세요.</div>
                     </div>
                 </div>
+
+                <!-- 2. 환율 계산기 위젯 -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-700">
+                    <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2 dark:text-slate-200">
+                        <i class="fa-solid fa-calculator text-blue-500"></i> 환율 계산기
+                    </h3>
+                    
+                    <!-- 통화 선택 드롭다운 및 동적 입력/출력 필드 - EUR, JPY 유지 -->
+                    <div class="space-y-3">
+                        <!-- 외화 입력 필드 -->
+                        <div class="flex items-center gap-2">
+                            <select id="calc-currency-select" onchange="updateCurrencyRate(); calculateExchange()"
+                                    class="w-20 p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white font-bold">
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                                <option value="JPY">JPY</option>
+                            </select>
+                            <input type="number" id="calc-input-foreign" placeholder="100" oninput="calculateExchange()"
+                                class="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                        </div>
+                        <!-- KRW 출력 필드 -->
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-500 w-20 text-center">KRW (원)</span>
+                            <input type="text" id="calc-input-krw" readonly 
+                                class="flex-1 p-2 bg-slate-100 border border-slate-200 rounded-lg text-right font-mono font-bold text-slate-700 dark:bg-slate-600 dark:border-slate-500 dark:text-slate-200" value="-">
+                        </div>
+                        <!-- 현재 환율 표시 -->
+                        <div class="text-right text-xs text-slate-400">
+                            환율: <span id="current-rate">-</span>원/<span id="current-currency-unit">USD</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 3. 주요 사이트 링크 위젯 -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-700">
+                    <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2 dark:text-slate-200">
+                        <i class="fa-solid fa-link text-green-500"></i> 주요 사이트
+                    </h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <a href="https://finance.naver.com/" target="_blank" class="block p-2 text-center text-xs bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors border border-slate-100 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-600">
+                            네이버 금융
+                        </a>
+                        <a href="https://kr.investing.com/" target="_blank" class="block p-2 text-center text-xs bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors border border-slate-100 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-600">
+                            인베스팅닷컴
+                        </a>
+                    </div>
+                </div>
+
             </div>
         </div>
     </main>
 
     <script>
         // === 설정 ===
+        // ✅ [반영] 주요 지표 6개만 표시 (EUR/JPY 제외)
         const INDICES = [
-            { id: '^KS11', name: 'KOSPI' }, { id: '^KQ11', name: 'KOSDAQ' },
-            { id: 'NQ=F', name: 'NASDAQ' }, { id: 'KRW=X', name: 'USD/KRW' }
+            { id: '^KS11', name: 'KOSPI', link: 'https://finance.naver.com/sise/sise_index.nhn?code=KOSPI' },
+            { id: '^KQ11', name: 'KOSDAQ', link: 'https://finance.naver.com/sise/sise_index.nhn?code=KOSDAQ' },
+            { id: 'NQ=F', name: 'NASDAQ 선물', link: 'https://kr.investing.com/indices/nq-100-futures' }, 
+            { id: 'KRW=X', name: 'USD/KRW', link: 'https://finance.naver.com/marketindex/exchangeDetail.naver?marketindexCd=FX_USDKRW' },
+            { id: 'BTC-KRW', name: 'Bitcoin', link: 'https://kr.investing.com/crypto/bitcoin/btc-krw' },
+            { id: 'SI=F', name: 'Silver(XAG/USD)', link: 'https://kr.investing.com/commodities/silver' }
         ];
-        const TOP_STOCKS = [
-            { code: '005930', name: '삼성전자' }, { code: '000660', name: 'SK하이닉스' },
-            { code: '373220', name: 'LG에너지' }, { code: '207940', name: '삼바' },
-            { code: '005380', name: '현대차' }, { code: '247540', name: '에코프로비엠' }
-        ];
+
+        // 환율 계산기 로직 유지를 위해 EUR/JPY 데이터는 Mock으로 유지
+        let currentRates = {
+            USD: { rate: 1350.00, link: 'https://finance.naver.com/marketindex/exchangeDetail.naver?marketindexCd=FX_USDKRW', unit: 1 },
+            EUR: { rate: 1450.00, link: 'https://finance.naver.com/marketindex/exchangeDetail.naver?marketindexCd=FX_EURKRW', unit: 1 },
+            JPY: { rate: 9.50, link: 'https://finance.naver.com/marketindex/exchangeDetail.naver?marketindexCd=FX_JPYKRW', unit: 100 } // 100엔당
+        };
+        let selectedCurrency = 'USD'; // 기본 선택 통화
+
+        // Mock Data 생성 헬퍼 함수
+        function createMockStocks(count, market, baseCap, codePrefix, sectorKey) {
+            return Array(count).fill(0).map((_, i) => ({
+                code: `${market.substring(0, 1)}MOCK${codePrefix}${i < 9 ? `0${i + 1}` : `${i + 1}`}`, 
+                name: `${sectorKey.replace(/KOSDAQ |KOSPI |\s*\(.*\)\s*/g, '').replace(/\//g, '·')} M${i + 1}`,
+                change: (Math.random() * 3 - 1.5).toFixed(2) * 1,
+                price: Math.floor(Math.random() * 30000) + 10000,
+                market: market,
+                cap: baseCap - i * (Math.random() * 50) - 1, 
+                rank: 0 
+            }));
+        }
+
+        // Market Map에 표시할 종목 목록 (시가총액 및 섹터 정보 포함)
+        const ALL_MARKET_MAP_STOCKS = {
+            // --- KOSPI Top Tier (Core) ---
+            '반도체(메모리/파운드리)': [ 
+                { code: '005930', name: '삼성전자', change: -1.3, price: 38000, market: 'KOSPI', cap: 450000, rank: 0 },
+                { code: '000660', name: 'SK하이닉스', change: 2.15, price: 950000, market: 'KOSPI', cap: 100000, rank: 0 },
+            ],
+            '2차전지 셀/모듈': [
+                { code: '373220', name: 'LG에너지솔루션', change: 0.41, price: 245000, market: 'KOSPI', cap: 35000, rank: 0 },
+                { code: '006400', name: '삼성SDI', change: 0.5, price: 400000, market: 'KOSPI', cap: 28000, rank: 0 },
+                { code: '003283', name: 'LG화학', change: 0.1, price: 650000, market: 'KOSPI', cap: 15000, rank: 0 },
+            ],
+            '완성차': [
+                { code: '005380', name: '현대차', change: 1.2, price: 200000, market: 'KOSPI', cap: 40000, rank: 0 },
+                { code: '000270', name: '기아', change: 0.9, price: 85000, market: 'KOSPI', cap: 25000, rank: 0 },
+            ],
+            'AI/플랫폼': [ 
+                { code: '035420', name: 'NAVER', change: -1.0, price: 180000, market: 'KOSPI', cap: 35000, rank: 0 },
+                { code: '036570', name: '엔씨소프트', change: 2.97, price: 52000, market: 'KOSPI', cap: 15000, rank: 0 },
+            ],
+            '제약/바이오(대형)': [ 
+                { code: '068270', name: '셀트리온', change: -1.8, price: 82000, market: 'KOSPI', cap: 20000, rank: 0 },
+                { code: '000100', name: '유한양행', change: 0.3, price: 60000, market: 'KOSPI', cap: 9000, rank: 0 },
+            ],
+            '은행/지주': [
+                { code: '105560', name: 'KB금융', change: 0.5, price: 70000, market: 'KOSPI', cap: 18000, rank: 0 },
+                { code: '055550', name: '신한지주', change: 0.3, price: 40000, market: 'KOSPI', cap: 15000, rank: 0 },
+            ],
+            '증권/보험': [ 
+                { code: '000010', name: '하나금융지주', change: 1.0, price: 50000, market: 'KOSPI', cap: 12000, rank: 0 },
+                { code: '032110', name: 'S-Oil', change: -1.0, price: 65000, market: 'KOSPI', cap: 10000, rank: 0 }, 
+            ],
+
+            // --- KOSDAQ Top Tier (Core) ---
+            '2차전지 양극재/소재': [ 
+                { code: '003670', name: '포스코퓨처엠', change: 0.8, price: 350000, market: 'KOSDAQ', cap: 9000, rank: 0 },
+                { code: '247540', name: '에코프로비엠', change: 1.92, price: 265000, market: 'KOSDAQ', cap: 25000, rank: 0 },
+                { code: '086520', name: '에코프로', change: 1.27, price: 94100, market: 'KOSDAQ', cap: 18000, rank: 0 },
+                { code: '210000', name: '엘앤에프', change: -1.5, price: 150000, market: 'KOSDAQ', cap: 8500, rank: 0 },
+                { code: '032830', name: '코스모신소재', change: 2.0, price: 55000, market: 'KOSDAQ', cap: 7500, rank: 0 },
+            ],
+            '제약/바이오(성장)': [
+                { code: '196170', name: '알테오젠', change: 3.6, price: 345000, market: 'KOSDAQ', cap: 10000, rank: 0 },
+                { code: '091990', name: '셀트리온헬스케어', change: 1.2, price: 70000, market: 'KOSDAQ', cap: 12000, rank: 0 },
+            ],
+            '의료기기/헬스케어': [
+                { code: '950130', name: '휴젤', change: 2.46, price: 125000, market: 'KOSDAQ', cap: 8000, rank: 0 },
+                { code: '084990', name: '헬릭스미스', change: -0.5, price: 5000, market: 'KOSDAQ', cap: 2000, rank: 0 },
+            ],
+            '반도체 소부장/장비': [ 
+                { code: '086790', name: '하나마이크론', change: -0.5, price: 25000, market: 'KOSDAQ', cap: 5000, rank: 0 },
+            ],
+            
+            // --- KOSPI 세분화된 기타 소비재 (40개 Mock) ---
+            'KOSPI 식음료/프랜차이즈': createMockStocks(15, 'KOSPI', 5000, 'P1X', '식음료/프랜차이즈'),
+            'KOSPI 유통/백화점': createMockStocks(15, 'KOSPI', 3500, 'P2X', '유통/백화점'),
+            'KOSPI 화학/소재': createMockStocks(10, 'KOSPI', 2000, 'P3X', '화학/소재'),
+
+            // --- KOSDAQ 세분화된 기타 성장주 (40개 Mock) ---
+            'KOSDAQ 게임/엔터': createMockStocks(15, 'KOSDAQ', 10000, 'Q1X', '게임/엔터'),
+            'KOSDAQ 인터넷/컨텐츠': createMockStocks(15, 'KOSDAQ', 8000, 'Q2X', '인터넷/컨텐츠'),
+            'KOSDAQ 로봇/자동화': createMockStocks(10, 'KOSDAQ', 6000, 'Q3X', '로봇/자동화'),
+        };
+
+
         let currentSymbol = '005930';
+        
 
         // === 유틸리티 ===
         function formatNum(n) { return new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 2 }).format(n); }
         function getColor(v) { return v > 0 ? 'text-red-500' : (v < 0 ? 'text-blue-500' : 'text-slate-500'); }
+        function getColorBg(v) { return v > 0 ? 'bg-red-500/10' : (v < 0 ? 'bg-blue-500/10' : 'bg-slate-500/10'); }
 
-        // === 탭 전환 ===
+        // 시가총액 포맷팅 함수 (억 원 -> 조 원)
+        function formatCap(capValue) {
+            if (capValue >= 10000) {
+                return `${(capValue / 10000).toFixed(1)}조 원`;
+            }
+            if (capValue > 0) {
+                // 천 단위 콤마 추가
+                return `${formatNum(capValue)}억 원`; 
+            }
+            return 'N/A';
+        }
+
+        // 시총/순위 정보 검색 함수
+        function getStockDetailsBySymbol(symbol) {
+            for (const sector in ALL_MARKET_MAP_STOCKS) {
+                // Find the stock object within the sector's array
+                const found = ALL_MARKET_MAP_STOCKS[sector].find(s => s.code === symbol);
+                if (found) {
+                    return {
+                        cap: formatCap(found.cap),
+                        // 순위는 1~60위까지 표시되므로 0보다 클 때만 표시
+                        rank: found.rank > 0 ? `${found.rank}위` : 'N/A' 
+                    };
+                }
+            }
+            return { cap: 'N/A', rank: 'N/A' };
+        }
+
+
+        // === 다크모드 로직 ===
+        function initDarkMode() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                updateThemeIcon(true);
+            } else {
+                document.documentElement.classList.remove('dark');
+                updateThemeIcon(false);
+            }
+        }
+        function toggleDarkMode() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+                updateThemeIcon(false);
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+                updateThemeIcon(true);
+            }
+        }
+        function updateThemeIcon(isDark) {
+            const icon = document.getElementById('theme-icon');
+            icon.className = isDark ? "fa-solid fa-sun text-yellow-400 text-lg" : "fa-solid fa-moon text-slate-600 text-lg";
+        }
+
+
+        // === 환율 계산기 로직 ===
+        // 통화 종류를 반영하여 계산
+        function calculateExchange() {
+            const foreignInput = document.getElementById('calc-input-foreign').value;
+            const krwOutput = document.getElementById('calc-input-krw');
+            
+            const rateInfo = currentRates[selectedCurrency];
+            const currentRate = rateInfo ? rateInfo.rate : 0;
+            const unit = rateInfo ? rateInfo.unit : 1;
+
+            if (currentRate > 0 && foreignInput) {
+                const amount = parseFloat(foreignInput);
+                // 100엔당 표기일 경우, 1엔당 가격으로 변환하여 계산
+                const calculatedKrw = amount * (currentRate / unit); 
+                krwOutput.value = formatNum(calculatedKrw);
+            } else {
+                krwOutput.value = "-";
+            }
+        }
+
+        // 선택된 통화에 따라 환율 정보를 업데이트하고 계산을 트리거
+        function updateCurrencyRate() {
+            const selectElement = document.getElementById('calc-currency-select');
+            selectedCurrency = selectElement.value;
+
+            const rateInfo = currentRates[selectedCurrency];
+            const rateDisplay = document.getElementById('current-rate');
+            const unitDisplay = document.getElementById('current-currency-unit');
+            
+            if (rateInfo) {
+                rateDisplay.textContent = formatNum(rateInfo.rate);
+                unitDisplay.textContent = selectedCurrency;
+                // 100엔당 표기일 경우, UI에 (100엔) 표시 추가
+                if (rateInfo.unit > 1) {
+                    unitDisplay.textContent += ` (${rateInfo.unit}단위)`;
+                }
+            } else {
+                rateDisplay.textContent = "-";
+                unitDisplay.textContent = selectedCurrency;
+            }
+
+            // 환율 정보가 바뀌었으므로 계산 재실행
+            calculateExchange();
+        }
+        
+        // === 관심 종목 즐겨찾기 로직 ===
+        function getFavorites() {
+            const favs = localStorage.getItem('stockFavorites');
+            return favs ? JSON.parse(favs) : ['005930', 'TSLA']; // 기본값
+        }
+
+        function toggleFavorite() {
+            let favs = getFavorites();
+            const btn = document.getElementById('btn-favorite');
+            
+            if (favs.includes(currentSymbol)) {
+                favs = favs.filter(s => s !== currentSymbol); // 삭제
+                btn.className = "text-slate-300 hover:text-yellow-400 transition-colors text-2xl";
+            } else {
+                favs.push(currentSymbol); // 추가
+                btn.className = "text-yellow-400 hover:text-yellow-500 transition-colors text-2xl drop-shadow-sm";
+            }
+            
+            localStorage.setItem('stockFavorites', JSON.stringify(favs));
+            fetchWatchlistData();
+        }
+
+        function updateFavoriteBtnState() {
+            const favs = getFavorites();
+            const btn = document.getElementById('btn-favorite');
+            if (favs.includes(currentSymbol)) {
+                btn.className = "text-yellow-400 hover:text-yellow-500 transition-colors text-2xl drop-shadow-sm";
+            } else {
+                btn.className = "text-slate-300 hover:text-yellow-400 transition-colors text-2xl";
+            }
+        }
+
+        async function fetchWatchlistData() {
+            const favs = getFavorites();
+            const container = document.getElementById('watchlist-container');
+            
+            if (!container) return; // 요소가 없으면 함수 종료 (오류 방지)
+
+            if (favs.length === 0) {
+                container.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">★ 버튼을 눌러 종목을 추가해보세요.</div>';
+                return;
+            }
+
+            container.innerHTML = ''; 
+
+            // 실제 API 호출 대신 Mock 데이터를 사용합니다.
+            const promises = favs.map(symbol => fetch(`/api/info?symbol=${symbol}`).then(res => res.json()).catch(() => getMockData(symbol)));
+            const results = await Promise.all(promises);
+
+            results.forEach(data => {
+                const item = document.createElement('div');
+                item.className = "p-3 flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors";
+                item.onclick = () => {
+                    document.getElementById('symbol-input').value = data.symbol;
+                    fetchAllData();
+                };
+
+                const changeSign = data.change > 0 ? '+' : '';
+                const colorClass = getColor(data.change);
+                
+                item.innerHTML = `
+                    <div>
+                        <div class="font-bold text-sm text-slate-700 dark:text-slate-200">${data.symbol}</div>
+                        <div class="text-xs text-slate-400">클릭하여 상세 보기</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-sm dark:text-white">${formatNum(data.price)}</div>
+                        <div class="text-xs ${colorClass}">
+                            ${changeSign}${formatNum(data.change_percent.toFixed(2))}%
+                        </div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+
+        // === 메인 탭 전환 (뉴스/커뮤니티) ===
         function switchTab(tab) {
             document.getElementById('content-news').classList.toggle('hidden', tab !== 'news');
             document.getElementById('content-community').classList.toggle('hidden', tab !== 'community');
@@ -163,6 +565,8 @@
             const sym = document.getElementById('symbol-input').value;
             currentSymbol = sym;
             
+            updateFavoriteBtnState(); 
+            
             try {
                 const res = await fetch(`/api/info?symbol=${sym}`);
                 const data = await res.json();
@@ -170,7 +574,336 @@
             } catch { renderMain(mockStock(sym)); }
 
             if(document.getElementById('tab-community').classList.contains('active')) fetchCommunity();
+            
+            // 실시간 가격 데이터의 안정성을 위해 10초마다 갱신을 요청합니다.
+            fetchMarketData(); 
         }
+        
+        // 주가 차트 시뮬레이션 함수 -> 캔들차트 로직
+        function drawStockChart(price, change) {
+            const canvas = document.getElementById('stock-chart-canvas');
+            const loading = document.getElementById('chart-loading');
+            
+            if (!canvas) return;
+
+            // 캔버스 크기 조정
+            const containerWidth = canvas.parentElement.clientWidth;
+            canvas.width = containerWidth;
+            canvas.height = 150; // 고정 높이
+
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            loading.classList.remove('hidden');
+
+            const width = canvas.width;
+            const height = canvas.height;
+            const dataPoints = 12; // 12개의 캔들 (예: 12시간 또는 12일)
+            
+            // 200ms 딜레이 후 차트 로딩
+            setTimeout(() => {
+                loading.classList.add('hidden');
+
+                // 1. Mock OHLC 데이터 생성 (현재 가격과 등락률 기반)
+                const OHLCData = [];
+                const basePrice = price / (1 + change / 100);
+                const dailyRange = Math.abs(change) * 1.5; 
+                
+                let minVal = basePrice * 0.98; // 전체 가격 범위 추정치
+                let maxVal = basePrice * 1.02;
+
+                let lastClose = basePrice;
+
+                for (let i = 0; i < dataPoints; i++) {
+                    // 다음 시가 (Open)는 이전 종가(Close) 근처에서 시작
+                    const open = lastClose * (1 + (Math.random() - 0.5) * 0.005); 
+                    
+                    // 변동폭 설정
+                    const variance = dailyRange * (Math.random() * 0.5 + 0.5); 
+                    const highLowDiff = open * (variance / 100);
+                    
+                    const high = open + highLowDiff * Math.random();
+                    const low = open - highLowDiff * Math.random();
+                    
+                    // 종가(Close)는 랜덤하게 결정되지만, 마지막 캔들은 현재 가격으로 수렴
+                    let close;
+                    if (i === dataPoints - 1) {
+                         close = price; // 마지막 캔들의 종가는 현재 가격
+                    } else {
+                        close = open + (Math.random() - 0.5) * highLowDiff;
+                    }
+
+                    // OHLC 순서 보정
+                    const candleHigh = Math.max(open, close, high);
+                    const candleLow = Math.min(open, close, low);
+
+                    OHLCData.push({ open, high: candleHigh, low: candleLow, close });
+
+                    minVal = Math.min(minVal, candleLow);
+                    maxVal = Math.max(maxVal, candleHigh);
+                    lastClose = close;
+                }
+
+                // 2. 스케일링 설정
+                const padding = 10;
+                const chartHeight = height - padding * 2;
+                const chartWidth = width - padding * 2;
+                const priceRange = maxVal - minVal;
+                const barWidth = chartWidth / dataPoints * 0.6;
+                const gap = chartWidth / dataPoints * 0.4;
+                
+                const getY = (value) => height - padding - ((value - minVal) / priceRange) * chartHeight;
+
+                // 3. 캔들 그리기
+                for (let i = 0; i < dataPoints; i++) {
+                    const data = OHLCData[i];
+                    const x = padding + i * (barWidth + gap) + gap / 2;
+                    
+                    const openY = getY(data.open);
+                    const closeY = getY(data.close);
+                    const highY = getY(data.high);
+                    const lowY = getY(data.low);
+
+                    const isRising = data.close > data.open;
+                    const bodyTop = isRising ? closeY : openY;
+                    const bodyBottom = isRising ? openY : closeY;
+                    const bodyHeight = Math.max(1, bodyBottom - bodyTop); // 최소 높이 1px
+
+                    ctx.fillStyle = isRising ? '#ef4444' : '#3b82f6'; // 빨강(상승) 또는 파랑(하락)
+                    ctx.strokeStyle = isRising ? '#ef4444' : '#3b82f6';
+
+                    // 꼬리(심지) 그리기
+                    ctx.beginPath();
+                    ctx.moveTo(x + barWidth / 2, highY);
+                    ctx.lineTo(x + barWidth / 2, lowY);
+                    ctx.stroke();
+
+                    // 몸통 그리기
+                    ctx.fillRect(x, bodyTop, barWidth, bodyHeight);
+                }
+                
+                // 마지막 가격 기준선 (현재 가격) 그리기
+                ctx.beginPath();
+                ctx.strokeStyle = change > 0 ? '#ef4444' : (change < 0 ? '#3b82f6' : '#94a3b8');
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 2]); // 점선
+
+                const currentY = getY(price);
+                ctx.moveTo(padding, currentY);
+                ctx.lineTo(width - padding, currentY);
+                ctx.stroke();
+                ctx.closePath();
+                ctx.setLineDash([]); 
+
+            }, 200); // 로딩 시뮬레이션
+        }
+        // 캔들차트 시뮬레이션 함수 끝
+
+
+        // Market Map 필터링 및 렌더링
+        function renderMarketMap(filterMode = 'KOSDAQ_TOP_60') {
+            // 1. 버튼 활성화/비활성화
+            const buttons = ['all', 'kospi_top_60', 'kosdaq_top_60'];
+            buttons.forEach(id => {
+                const btn = document.getElementById(`filter-${id}`);
+                const isActive = id.toUpperCase() === filterMode;
+                if (btn) {
+                    btn.className = isActive
+                        ? 'px-3 py-1 rounded-full text-xs font-medium bg-blue-600 text-white hover:bg-blue-700'
+                        : 'px-3 py-1 rounded-full text-xs font-medium border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700';
+                }
+            });
+
+            // 2. 종목 필터링
+            let filteredSectors = {};
+            let totalCapBySector = {};
+            
+            const filterMarket = filterMode === 'KOSPI_TOP_60' ? 'KOSPI' : (filterMode === 'KOSDAQ_TOP_60' ? 'KOSDAQ' : null);
+            const maxStocks = filterMode === 'ALL' ? 120 : 60;
+
+            // 모든 섹터의 종목을 하나의 리스트로 모음
+            let allStocks = [];
+            for (const stocks of Object.values(ALL_MARKET_MAP_STOCKS)) {
+                allStocks.push(...stocks);
+            }
+            
+            // 1차 필터링: 마켓 모드에 맞는 종목만 남기기
+            let marketStocks = allStocks;
+            if (filterMarket) {
+                marketStocks = allStocks.filter(s => s.market === filterMarket);
+            }
+            
+            // 2차 정렬: 시가총액(cap) 순으로 정렬하여 순위를 확정
+            marketStocks.sort((a, b) => b.cap - a.cap);
+
+            // 3차 제한: Top 60 (또는 ALL 모드 120)까지만 사용
+            let topMarketStocks = marketStocks.slice(0, maxStocks);
+
+            // 4차 섹터별 재분배 및 순위 부여
+            let finalStocksBySector = {};
+            
+            // 시총 순으로 정렬된 종목 리스트를 순회하며 순위 부여
+            topMarketStocks.forEach((stock, index) => {
+                const currentRank = index + 1; // 1부터 순위 시작
+                // 종목이 속한 원래 섹터 찾기
+                const sectorName = Object.keys(ALL_MARKET_MAP_STOCKS).find(key => 
+                    ALL_MARKET_MAP_STOCKS[key].some(s => s.code === stock.code && s.market === stock.market)
+                ) || '기타';
+
+                if (!finalStocksBySector[sectorName]) {
+                    finalStocksBySector[sectorName] = [];
+                    totalCapBySector[sectorName] = 0;
+                }
+                
+                // 순위 필드를 정확한 순위로 업데이트
+                stock.rank = currentRank; 
+                finalStocksBySector[sectorName].push(stock);
+                totalCapBySector[sectorName] += stock.cap;
+            });
+            
+            // 5. 섹터 시총 합계 순으로 정렬 (가장 큰 섹터가 위로)
+            const sortedSectorNames = Object.keys(finalStocksBySector).sort((a, b) => {
+                return totalCapBySector[b] - totalCapBySector[a];
+            });
+
+            // ✅ 섹터별 평균 등락률 계산
+            let sectorPerformance = {};
+            sortedSectorNames.forEach(sectorName => {
+                const stocks = finalStocksBySector[sectorName];
+                if (stocks.length > 0) {
+                    // 등락률의 합을 종목 수로 나누어 평균 등락률 계산
+                    const totalChange = stocks.reduce((sum, s) => sum + s.change, 0);
+                    sectorPerformance[sectorName] = totalChange / stocks.length;
+                } else {
+                    sectorPerformance[sectorName] = 0;
+                }
+            });
+            
+            // Market Breadth 계산 및 업데이트
+            const totalCount = topMarketStocks.length;
+            const upCount = topMarketStocks.filter(s => s.change > 0).length;
+            const downCount = topMarketStocks.filter(s => s.change < 0).length;
+            const upPercent = totalCount > 0 ? (upCount / totalCount) * 100 : 0;
+            const downPercent = totalCount > 0 ? (downCount / totalCount) * 100 : 0;
+
+            document.getElementById('breadth-up-count').textContent = `${upCount}개 (${upPercent.toFixed(1)}%)`;
+            document.getElementById('breadth-down-count').textContent = `${downCount}개 (${downPercent.toFixed(1)}%)`;
+            
+            const upBar = document.getElementById('breadth-up-bar');
+            upBar.style.width = `${upPercent}%`;
+            upBar.classList.toggle('breadth-bar-red', upPercent > downPercent); // 상승 우위일 때 빨간색
+            upBar.classList.toggle('bg-blue-500', upPercent <= downPercent); // 하락 우위일 때 파란색
+            
+            // 6. HTML 렌더링
+            const container = document.getElementById('market-map-container');
+            let htmlContent = '';
+            let globalStockCount = topMarketStocks.length;
+
+            if (sortedSectorNames.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-slate-400">선택된 모드(${filterMode})에 해당하는 종목이 없습니다. (현재 Mock Data: ${globalStockCount}개 표시됨)</div>`;
+                return;
+            }
+            
+            let stockCountMessage = filterMarket ? `${filterMarket} Top 60 중 ${globalStockCount}개 표시됨` : `총 ${globalStockCount}개 표시됨`;
+            
+            // 섹션 헤더에 총 종목 수 표시
+            htmlContent += `<div class="text-sm text-slate-500 dark:text-slate-400 mb-4">${stockCountMessage}</div>`;
+
+            sortedSectorNames.forEach(sectorName => {
+                const stocks = finalStocksBySector[sectorName];
+                const sectorAvgChange = sectorPerformance[sectorName] || 0; 
+                
+                // 아이콘 및 색상 정의
+                let iconClass = 'fa-regular fa-lightbulb';
+                let titleColor = 'text-slate-600 dark:text-slate-400';
+                
+                if (sectorName.includes('2차전지')) { iconClass = 'fa-car-battery'; titleColor = 'text-blue-600 dark:text-blue-400'; }
+                else if (sectorName.includes('반도체')) { iconClass = 'fa-microchip'; titleColor = 'text-red-600 dark:text-red-400'; }
+                else if (sectorName.includes('AI') || sectorName.includes('플랫폼')) { iconClass = 'fa-robot'; titleColor = 'text-red-600 dark:text-red-400'; }
+                else if (sectorName.includes('완성차')) { iconClass = 'fa-car-side'; titleColor = 'text-green-600 dark:text-green-400'; }
+                else if (sectorName.includes('부품')) { iconClass = 'fa-gears'; titleColor = 'text-green-600 dark:text-green-400'; }
+                else if (sectorName.includes('제약') || sectorName.includes('바이오')) { iconClass = 'fa-dna'; titleColor = 'text-purple-600 dark:text-purple-400'; }
+                else if (sectorName.includes('의료기기')) { iconClass = 'fa-heart-pulse'; titleColor = 'text-purple-600 dark:text-purple-400'; }
+                else if (sectorName.includes('은행') || sectorName.includes('증권')) { iconClass = 'fa-money-bill-trend-up'; titleColor = 'text-amber-600 dark:text-amber-400'; }
+                else if (sectorName.includes('식음료')) { iconClass = 'fa-burger'; titleColor = 'text-orange-600 dark:text-orange-400'; }
+                else if (sectorName.includes('유통')) { iconClass = 'fa-store'; titleColor = 'text-indigo-600 dark:text-indigo-400'; }
+                else if (sectorName.includes('화학')) { iconClass = 'fa-flask'; titleColor = 'text-lime-600 dark:text-lime-400'; }
+                else if (sectorName.includes('게임') || sectorName.includes('엔터')) { iconClass = 'fa-gamepad'; titleColor = 'text-cyan-600 dark:text-cyan-400'; }
+                else if (sectorName.includes('컨텐츠')) { iconClass = 'fa-tv'; titleColor = 'text-pink-600 dark:text-pink-400'; }
+                else if (sectorName.includes('로봇')) { iconClass = 'fa-gears'; titleColor = 'text-teal-600 dark:text-teal-400'; }
+                
+                const sectorTotalCap = totalCapBySector[sectorName];
+                
+                htmlContent += `
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 dark:bg-slate-800 dark:border-slate-700">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-bold text-lg flex items-center gap-2 ${titleColor}">
+                                <i class="fa-solid ${iconClass}"></i> ${sectorName} (${stocks.length}개)
+                            </h3>
+                            <div class="text-sm text-slate-500 dark:text-slate-400">시총합: ${formatNum(sectorTotalCap)}억원</div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            ${stocks.map(stock => {
+                                const colorClass = getColor(stock.change);
+                                const bgColorClass = getColorBg(stock.change);
+                                const changeSign = stock.change > 0 ? '▲' : '▼';
+                                
+                                // KOSDAQ 종목에만 (Q) 표시
+                                const marketBadge = stock.market === 'KOSDAQ' ? '<span class="text-[10px] text-blue-400 ml-1"> (Q)</span>' : '';
+                                
+                                // 순위 표시
+                                const isTop20 = stock.rank <= 20;
+                                const isTop3 = stock.rank <= 3;
+
+                                const rankBadgeClass = isTop3 ? 'bg-red-500' : (isTop20 ? 'bg-orange-500' : 'bg-amber-500');
+                                const rankAnimationClass = isTop20 ? 'rank-pop' : '';
+                                const rankDisplay = `<span class="text-[10px] text-white font-bold px-2 py-0.5 rounded-full ${rankBadgeClass} ${rankAnimationClass}">${isTop3 ? 'T' : ''}${stock.rank}위</span>`;
+                                
+                                // ✅ 상대 강도 배지 생성 로직
+                                const relativeStrength = stock.change - sectorAvgChange;
+                                let strengthBadge = '';
+                                
+                                if (relativeStrength > 0.5) {
+                                    strengthBadge = `<span class="ml-1 text-[10px] font-bold text-white bg-green-500 px-1 py-0.5 rounded-full" title="섹터 평균 대비 +${relativeStrength.toFixed(2)}% 강세">강세</span>`;
+                                } else if (relativeStrength < -0.5) {
+                                    strengthBadge = `<span class="ml-1 text-[10px] font-bold text-white bg-indigo-500 px-1 py-0.5 rounded-full" title="섹터 평균 대비 ${relativeStrength.toFixed(2)}% 약세">약세</span>`;
+                                } else {
+                                    strengthBadge = `<span class="ml-1 text-[10px] font-medium text-slate-400" title="섹터 평균과 유사">중립</span>`;
+                                }
+                                
+                                return `
+                                    <div onclick="document.getElementById('symbol-input').value='${stock.code}'; fetchAllData()" 
+                                         class="market-card p-3 rounded-xl shadow-sm border border-slate-200 cursor-pointer ${bgColorClass} hover:ring-2 hover:ring-blue-400 dark:border-slate-700 transition-all">
+                                        
+                                        <div class="flex justify-between items-start mb-1">
+                                            <div class="font-bold text-sm text-slate-700 dark:text-slate-100">${stock.name}${marketBadge}</div>
+                                            ${rankDisplay}
+                                        </div>
+                                        
+                                        <!-- 시가총액 정보 -->
+                                        <div class="text-xs text-slate-500 dark:text-slate-400 mb-1">시총: ${formatCap(stock.cap)}</div>
+
+                                        <div class="font-extrabold text-xl dark:text-white">${formatNum(stock.price)}</div>
+                                        
+                                        <!-- 상대 강도 배지 -->
+                                        <div class="text-xs ${colorClass} mt-1 flex items-center justify-between">
+                                            <div>${changeSign} ${formatNum(stock.change)}%</div>
+                                            ${strengthBadge} 
+                                        </div>
+                                        
+                                        <div class="text-[10px] text-slate-400 mt-1">${stock.code}</div> <!-- 코드 추가 -->
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = htmlContent;
+        }
+
 
         async function fetchCommunity() {
             const bestList = document.getElementById('best-community-list');
@@ -186,6 +919,7 @@
             latestList.innerHTML = '';
             
             try {
+                // 이 API 호출은 서버의 캐싱 로직 (5분/100개 글 검색)을 따릅니다.
                 const res = await fetch(`/api/community?code=${currentSymbol}`);
                 const data = await res.json();
                 
@@ -227,17 +961,104 @@
 
             } catch {
                 bestList.innerHTML = '<div class="text-center text-xs text-slate-400">로딩 실패</div>';
+                latestList.innerHTML = '<div class="text-center text-xs text-slate-400">로딩 실패</div>';
             }
+        }
+        
+        async function fetchMarketData() {
+            // 1. 주요 지표 갱신
+            INDICES.forEach(async (index) => {
+                try {
+                    const res = await fetch(`/api/info?symbol=${index.id}`);
+                    const data = await res.json();
+                    
+                    // 환율 데이터가 들어오면 currentRates 객체를 업데이트
+                    const currencyCode = index.id.split('=')[0];
+                    if (currentRates[currencyCode]) {
+                        // KRW=X만 INDICES에 있으므로, 이 지표가 업데이트 될 때만 calculateExchange를 호출
+                        currentRates[currencyCode].rate = data.price;
+                        if (index.id === 'KRW=X') { 
+                            updateCurrencyRate();
+                        }
+                    }
+                    updateIndexUI(index.id, data); 
+
+                } catch {
+                    const mockData = getMockData(index.id);
+                    updateIndexUI(index.id, mockData);
+                    
+                    // Mock Rate 사용 시 currentRates 업데이트
+                    if (index.id === 'KRW=X') {
+                        currentRates['USD'].rate = 1350; // Mock Rate
+                        updateCurrencyRate();
+                    }
+                    if (currentRates['EUR']) currentRates['EUR'].rate = 1450;
+                    if (currentRates['JPY']) currentRates['JPY'].rate = 9.5;
+                }
+            });
+            
+            // 2. 관심 종목 데이터 갱신
+            fetchWatchlistData();
         }
 
         // === 렌더링 헬퍼 ===
+        function updateIndexUI(id, data) {
+            const priceElem = document.getElementById(`idx-p-${id}`);
+            const linkElem = priceElem ? priceElem.closest('a') : null;
+            if(priceElem) {
+                // JPY의 경우 100엔당 가격이 들어오므로 1엔당 가격으로 환산하여 표시 (현재 INDICES에 JPY는 없으나, 혹시 모를 로직 유지를 위해)
+                let displayPrice = data.price;
+                
+                if(id === 'JPY=X' && currentRates['JPY']) {
+                    displayPrice = data.price / currentRates['JPY'].unit;
+                }
+
+                priceElem.textContent = formatNum(displayPrice);
+                
+                // Change element inside the link tag
+                const changeElem = linkElem ? linkElem.querySelector('.index-change') : null;
+                if(changeElem) {
+                    const changeSign = data.change > 0 ? '+' : '';
+                    changeElem.textContent = `${changeSign}${formatNum(data.change)} (${changeSign}${formatNum(data.change_percent.toFixed(2))}%)`;
+                    changeElem.className = `text-xs font-medium flex items-center mt-1 index-change ${getColor(data.change)}`;
+                }
+                
+                priceElem.className = `font-bold text-sm ${getColor(data.change)}`;
+            }
+        }
+        
         function renderMain(data) {
+            currentSymbol = data.symbol;
             document.getElementById('main-symbol').textContent = data.symbol;
             document.getElementById('main-price').textContent = formatNum(data.price);
             document.getElementById('main-price').className = `text-3xl font-bold dark:text-white ${getColor(data.change)}`;
             document.getElementById('main-change').textContent = `${data.change>0?'+':''}${formatNum(data.change)} (${formatNum(data.change_percent)}%)`;
             document.getElementById('main-change').className = `text-lg font-medium mb-1 ${getColor(data.change)}`;
+            
+            // 네이버 증권 링크 업데이트
             document.getElementById('link-naver').href = !isNaN(data.symbol) ? `https://finance.naver.com/item/main.naver?code=${data.symbol}` : `https://finance.yahoo.com/quote/${data.symbol}`;
+
+            // 시총 및 순위 정보 가져오기
+            const stockDetails = getStockDetailsBySymbol(currentSymbol);
+
+            // 시총 및 순위 정보 삽입
+            document.getElementById('stock-meta-info').innerHTML = `
+                <div class="flex gap-4 text-sm text-slate-500 dark:text-slate-400">
+                    <div class="flex items-center gap-1">
+                        <i class="fa-solid fa-coins text-yellow-500 text-xs"></i>
+                        <span>시총: ${stockDetails.cap}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <i class="fa-solid fa-trophy text-amber-500 text-xs"></i>
+                        <span>순위: ${stockDetails.rank}</span>
+                    </div>
+                </div>
+            `;
+            
+            // 주가 차트 다시 그리기 (캔들차트)
+            drawStockChart(data.price, data.change_percent);
+
+            updateFavoriteBtnState(); // 메인 종목 바뀔 때 즐겨찾기 별표 상태도 업데이트
 
             const newsBox = document.getElementById('content-news');
             if(data.news && data.news.length) {
@@ -252,50 +1073,54 @@
             }
         }
 
-        function mockStock(sym) { return { symbol: sym, price: 50000, change: 1000, change_percent: 2.0, news: [] }; }
+        function getMockData(symbol, name = '') {
+            const randomChangePercent = (Math.random() * 2 - 1);
+            let basePrice = 1000;
+            if(symbol.includes('KS11')) basePrice = 2500;
+            else if(symbol.includes('NQ')) basePrice = 18000;
+            
+            // 환율 Mock Data 제공 (계산기 로직 유지를 위함)
+            if(symbol === 'KRW=X') basePrice = 1350;
+            else if(symbol === 'EUR=X') basePrice = 1450;
+            else if(symbol === 'JPY=X') basePrice = 950; // 100엔당 950원 가정 (API가 100엔당 가격을 보낸다고 가정)
+            
+            const price = basePrice * (1 + randomChangePercent / 100);
+
+            return {
+                symbol: symbol,
+                name: name,
+                price: price,
+                change: price - basePrice,
+                change_percent: randomChangePercent,
+                news: [],
+                dart_url: null,
+                is_mock: true
+            };
+        }
+        function mockStock(sym) { return getMockData(sym); }
 
         // === 초기화 ===
         function init() {
-            if(localStorage.theme === 'dark') document.documentElement.classList.add('dark');
-            window.toggleDarkMode = () => {
-                document.documentElement.classList.toggle('dark');
-                localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-            };
-
+            initDarkMode();
+            
+            // 1. 지표 카드 생성
             const idxBox = document.getElementById('indices-container');
             idxBox.innerHTML = INDICES.map(i => `
-                <div class="bg-white p-3 rounded-xl border border-slate-200 dark:bg-slate-800 dark:border-slate-700">
-                    <div class="text-xs text-slate-500 mb-1">${i.name}</div>
+                <a href="${i.link}" target="_blank" class="card-hover bg-white p-3 rounded-xl border border-slate-200 dark:bg-slate-800 dark:border-slate-700 block">
+                    <div class="text-xs text-slate-500 mb-1 dark:text-slate-400">${i.name}</div>
                     <div class="font-bold text-sm dark:text-white" id="idx-p-${i.id}">-</div>
-                </div>
+                    <div class="text-xs font-medium mt-1 index-change" id="change-${i.id}">-</div>
+                </a>
             `).join('');
 
-            const rankBox = document.getElementById('ranking-container');
-            rankBox.innerHTML = TOP_STOCKS.map((s, i) => `
-                <div onclick="document.getElementById('symbol-input').value='${s.code}'; fetchAllData()" class="flex justify-between items-center p-2 hover:bg-slate-50 cursor-pointer rounded dark:hover:bg-slate-700">
-                    <div class="flex items-center gap-2">
-                        <span class="w-5 h-5 flex items-center justify-center ${i<3?'bg-yellow-400 text-white':'bg-slate-100 text-slate-500'} rounded text-xs font-bold">${i+1}</span>
-                        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">${s.name}</span>
-                    </div>
-                    <div class="text-xs font-bold" id="rank-p-${s.code}">-</div>
-                </div>
-            `).join('');
+            // 2. 마켓 맵 렌더링 (초기: KOSDAQ Top 60)
+            renderMarketMap('KOSDAQ_TOP_60');
 
-            const updateMini = async (s, idPrefix) => {
-                try {
-                    const res = await fetch(`/api/info?symbol=${s}`);
-                    const d = await res.json();
-                    const el = document.getElementById(`${idPrefix}-${s}`);
-                    if(el) {
-                        el.textContent = formatNum(d.price);
-                        el.className = `text-xs font-bold ${getColor(d.change)}`;
-                    }
-                } catch {}
-            };
-            INDICES.forEach(i => updateMini(i.id, 'idx-p'));
-            TOP_STOCKS.forEach(s => updateMini(s.code, 'rank-p'));
-
+            // 초기 로드
             fetchAllData(); 
+            
+            // ✅ [반영] 10초마다 갱신 (실시간 시세 요구사항을 만족하는 효율적인 주기)
+            setInterval(fetchMarketData, 10000); 
         }
         
         init();

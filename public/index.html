@@ -307,7 +307,7 @@
                 <div class="bg-white p-4 rounded-xl shadow-lg border border-slate-200 dark:bg-slate-800 dark:border-slate-700 space-y-4">
                     <h2 class="text-xl font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                         <i class="fa-solid fa-earth-americas text-blue-600"></i> 시장 지도 분석 (Market Map)
-                    </h2>
+                    </h2 >
                     
                     <!-- 필터 및 정렬 -->
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -366,7 +366,8 @@
             { id: 'NQ=F', name: 'NASDAQ 선물', link: 'https://kr.investing.com/indices/nq-100-futures' }, 
             { id: 'KRW=X', name: 'USD/KRW', link: 'https://finance.naver.com/marketindex/exchangeDetail.naver?marketindexCd=FX_USDKRW' },
             { id: 'BTC-KRW', name: 'Bitcoin', link: 'https://kr.investing.com/crypto/bitcoin/btc-krw' },
-            { id: 'XAG=X', name: 'Silver', link: 'https://kr.investing.com/commodities/silver' } 
+            // Silver 링크를 현물 시세 (XAG/USD) 페이지로 수정
+            { id: 'XAG=X', name: 'Silver', link: 'https://kr.investing.com/currencies/xag-usd' } 
         ];
 
         let currentRates = {
@@ -1326,7 +1327,7 @@
                                      class="flex items-center p-2 bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl cursor-pointer transition-shadow border border-slate-200 dark:border-slate-700 hover:shadow-md">
 
                                     <!-- 1. Name & Code (30%) + Rank -->
-                                    <div class="w-[30%] font-medium text-sm text-slate-800 dark:text-slate-100 truncate flex items-center">
+                                    <div class="w-[30%] font-medium text-sm text-slate-800 dark:text-slate-100 truncate flex-1 flex items-center">
                                         <!-- Rank Badge (Updated) -->
                                         <span class="text-sm mr-2" title="${rankTitle}">${rankIcon || rank}</span>
                                         ${stock.name} 
@@ -1673,7 +1674,8 @@
             else if (symbol === 'NQ=F') { basePrice = 18500; fixedChangePercent = -0.8; }
             else if (symbol === 'KRW=X') { basePrice = 1350; fixedChangePercent = -0.1; }
             else if (symbol === 'BTC-KRW') { basePrice = 95000000; fixedChangePercent = 3.5; }
-            else if (symbol === 'XAG=X') { basePrice = 24.50; fixedChangePercent = 0.7; }
+            // Silver의 시뮬레이션 데이터를 현물 가격 수준으로 유지
+            else if (symbol === 'XAG=X') { basePrice = 24.50; fixedChangePercent = 0.7; } 
             else if(symbol === 'EUR=X') { basePrice = 1450; fixedChangePercent = 0.0; } 
             else if(symbol === 'JPY=X') { basePrice = 950; fixedChangePercent = -0.5; } 
 

@@ -67,9 +67,11 @@
             }
         }
         
+        /* [NEW] 장운영 정보 배지 스타일 */
         .market-status-badge {
             display: inline-flex; align-items: center; padding: 0.2rem 0.5rem;
             border-radius: 9999px; font-weight: 700; font-size: 0.75rem; line-height: 1;
+            transition: all 0.3s;
         }
         
         #market-tools-section {
@@ -254,8 +256,7 @@
     <main class="max-w-7xl w-full mx-auto px-4 py-6 flex-1">
         
         <!-- PAGE 1: 통합 대시보드 (루틴 섹션 제거) -->
-        <!-- 초기 로드를 위해 page-hidden 클래스를 제거합니다. -->
-        <div id="page-dashboard" class="space-y-6 animate-fade-in"> 
+        <div id="page-dashboard" class="space-y-6 animate-fade-in">
             
             <!-- 3. 장중 증시 상황 (Ticker Tape Widget) -->
             <!-- 주의: KRX 데이터는 로컬 파일(file://) 실행 시 차단될 수 있습니다. (웹서버 권장) -->
@@ -272,7 +273,11 @@
                         <div class="flex items-center gap-3">
                             <h2 class="text-lg font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                                 <i id="main-widget-icon" class="fa-solid fa-fire text-red-500"></i> 
-                                <span id="main-widget-title">시장 히트맵 (S&P 500)</span>
+                                <span id="main-widget-title">S&P 500 히트맵</span>
+                                <!-- [NEW] 장운영 정보 배지 추가 -->
+                                <span id="market-status-badge" class="market-status-badge bg-slate-500 text-white ml-2">상태 확인 중</span>
+                                <!-- [NEW] 장운영 사유 추가 -->
+                                <span id="market-status-reason" class="text-sm font-medium text-slate-500 dark:text-slate-400 ml-2"></span> 
                                 <span id="widget-update-time" class="text-xs font-normal text-slate-400 dark:text-slate-500 ml-2"></span>
                             </h2>
                         </div>
@@ -403,7 +408,11 @@
                         <div class="space-y-3"><div class="flex items-center justify-between"><label id="current-price-label" class="text-sm font-medium text-slate-500 w-32 dark:text-slate-400">현재가 (매수가)</label><input type="number" id="target-current-price" placeholder="현재 주가" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" oninput="calculateTargetAnalysis()"></div><div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-32 dark:text-slate-400">보유 수량</label><input type="number" id="target-shares" placeholder="보유 주식 수" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" oninput="calculateTargetAnalysis()"></div></div>
                         <div id="target-input-current-cap-row" class="flex items-center justify-between space-y-3"><label class="text-sm font-medium text-slate-500 w-32 dark:text-slate-400">현재 시가총액 (조)</label><input type="number" id="target-current-cap" placeholder="예: 350.00" step="0.01" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" oninput="calculateTargetAnalysis()"></div>
                         <div id="target-cap-input-row" class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-32 dark:text-slate-400">목표 시가총액 (조)</label><input type="number" id="target-cap" placeholder="예: 500.00" step="0.01" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" oninput="calculateTargetAnalysis()"></div>
-                        <div id="target-return-rate-input-row" class="flex items-center justify-between hidden"><label class="text-sm font-medium text-slate-500 w-32 dark:text-slate-400">목표 수익률 (%)</label><input type="number" id="target-return-rate" placeholder="예: 20" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" oninput="calculateTargetAnalysis()"></div>
+                        <div id="target-return-rate-input-row" class="flex items-center justify-between hidden">
+                            <!-- [수정] 목표 수익률 입력 필드의 레이블에 ID 추가 -->
+                            <label id="target-rate-input-label" class="text-sm font-medium text-slate-500 w-32 dark:text-slate-400">목표 수익률 (%)</label>
+                            <input type="number" id="target-return-rate" placeholder="예: 20" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" oninput="calculateTargetAnalysis()">
+                        </div>
                         <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-3 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg"><div class="flex justify-between items-center"><span id="target-price-label" class="text-sm text-slate-700 dark:text-slate-200 font-bold">목표 단가:</span><div><span id="target-price" class="font-mono text-2xl font-extrabold text-indigo-700 dark:text-indigo-300">0원</span></div></div><div class="flex justify-between items-center"><span class="text-sm text-slate-500 dark:text-slate-400">총 평가 금액:</span><div><span id="target-valuation" class="font-mono text-base font-bold text-indigo-700 dark:text-indigo-300">0</span><span class="text-sm text-slate-400">원</span></div></div><div class="flex justify-between items-center"><span class="text-sm text-slate-500 dark:text-slate-400">예상 수익금:</span><div><span id="target-profit" class="font-mono text-base font-bold text-green-700 dark:text-green-300">0</span><span class="text-sm text-slate-400">원</span></div></div><div id="target-rate-row" class="flex justify-between items-center"><span class="text-xs text-slate-500 dark:text-slate-400">시총/수익률 변화:</span><span id="target-rate" class="font-mono text-sm font-bold text-slate-600 dark:text-slate-300">0.00%</span></div></div>
                     </div>
                 </div>
@@ -802,6 +811,8 @@
         let otherData = [];
         let currentEditingCategory = ''; // 현재 편집 중인 카테고리 (링크 추가/삭제용)
         let confirmCallback = null; // Confirmation callback
+        let marketStatusInterval = null; // 장 운영 정보 업데이트 인터벌 ID
+        let currentMarketSource = ''; // 'KRX' or 'US'
 
         // === 유틸리티 함수 ===
         // 문자열에서 쉼표 제거 후 숫자로 파싱, 실패 시 0 반환
@@ -839,8 +850,9 @@
             // 테마 변경 시 위젯도 새로 로드 (색상 반영)
             // 현재 활성화된 페이지가 대시보드일 때만 위젯 로드
             if (document.getElementById('page-dashboard').classList.contains('page-hidden') === false) { 
-                 loadHeatmapWidget(getCurrentTheme());
-                 loadTickerWidget(getCurrentTheme());
+                 // 현재 시장 소스를 유지하여 위젯 로드
+                 loadHeatmapWidget(getCurrentTheme(), currentMarketSource);
+                 loadTickerWidget(getCurrentTheme()); // Ticker is generic enough to not need source switch
             }
         }
 
@@ -889,12 +901,6 @@
             if (savedLinkMode) {
                 currentLinkMode = savedLinkMode;
             }
-
-            // 초기화 시 updateLinkModeUI 호출은 생략하고, switchPage('routine') 시 호출되도록 합니다.
-            // updateLinkModeUI(); 
-            // if (document.getElementById('page-routine').classList.contains('page-hidden') === false) {
-            //     renderHomeLinks(); 
-            // }
         }
         function initWatchlist() { let watchlist = JSON.parse(localStorage.getItem('myWatchlist')); if (!watchlist) localStorage.setItem('myWatchlist', JSON.stringify([{ s: "KRX:005930" }, { s: "NASDAQ:TSLA" }])); }
         function initFavoriteSymbols() { const saved = localStorage.getItem('favoriteSymbols'); favoriteSymbols = saved ? JSON.parse(saved) : DEFAULT_FAVORITE_SYMBOLS; renderFavoriteSymbols(); }
@@ -1278,12 +1284,23 @@
             
             const theme = getCurrentTheme();
             if(pageId === 'dashboard') { 
-                loadHeatmapWidget(theme); 
-                loadTickerWidget(theme); 
-                updateMarketStatusBadge(); 
+                // 위젯은 updateMarketStatus에서 로드됩니다.
+                checkMarketStatus(); // 장운영 정보 업데이트 (시장 소스 결정 및 위젯 로드)
+                // 장운영 정보 실시간 업데이트 시작
+                if (marketStatusInterval === null) {
+                    marketStatusInterval = setInterval(checkMarketStatus, 60000); // 1분마다 업데이트
+                }
                 renderFavoriteSymbols(); 
             }
-            else if (pageId === 'routine') { 
+            else {
+                // 대시보드가 아니면 장운영 업데이트 인터벌 중지
+                if (marketStatusInterval !== null) {
+                    clearInterval(marketStatusInterval);
+                    marketStatusInterval = null;
+                }
+            }
+            
+            if (pageId === 'routine') { 
                 // 페이지 전환 시, 저장된 모드가 있다면 해당 모드로 초기화
                 const savedMode = localStorage.getItem('currentLinkMode');
                 if (savedMode) {
@@ -1308,11 +1325,10 @@
         }
         
         // TradingView Heatmap Implementation
-        function loadHeatmapWidget(theme) {
+        function loadHeatmapWidget(theme, marketSource) {
             const container = document.getElementById('heatmap-container');
             if(!container) return;
             
-            // 모바일 환경(768px 미만)에서는 위젯을 로드하지 않아 성능 개선
             if (window.innerWidth < 768) {
                  container.innerHTML = '';
                  return;
@@ -1320,13 +1336,16 @@
             
             container.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
             
+            // [수정] 시장 소스에 관계없이 항상 S&P 500 (SPX500) Heatmap을 로드합니다. (사용자 요청 반영)
+            const dataSource = "SPX500"; // Always use S&P 500
+            
             const script = document.createElement('script');
             script.type = 'text/javascript';
             script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js';
             script.async = true;
             script.innerHTML = JSON.stringify({
                 "exchanges": [],
-                "dataSource": "SPX500",
+                "dataSource": dataSource,
                 "grouping": "sector",
                 "blockSize": "market_cap_basic",
                 "blockColor": "change",
@@ -1339,6 +1358,9 @@
                 "height": "100%"
             });
             
+            // 아이콘 색상 업데이트 (제목은 checkMarketStatus에서 통합 관리)
+            document.getElementById('main-widget-icon').classList.toggle('text-red-500', marketSource === 'US');
+            document.getElementById('main-widget-icon').classList.toggle('text-blue-500', marketSource === 'KRX');
             container.appendChild(script);
         }
 
@@ -1353,13 +1375,16 @@
             script.type = 'text/javascript';
             script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
             script.async = true;
+            
+            // [수정] 비트코인과 비트코인 도미넌스 순서 변경 (4.비트코인, 5.비트코인 도미넌스)
+            // 또한, 위젯이 멈추는 문제를 해결하기 위해 displayMode를 "adaptive"로 변경 시도
             script.innerHTML = JSON.stringify({
                 "symbols": [
                     { "proName": "FOREXCOM:SPXUSD", "title": "S&P 500" },
-                    { "proName": "NASDAQ:QQQ", "title": "나스닥 QQQ ETF" }, // 나스닥 100 지수를 QQQ ETF로 대체
+                    { "proName": "NASDAQ:QQQ", "title": "나스닥 QQQ ETF" },
                     { "proName": "FX_IDC:USDKRW", "title": "원달러 환율" },
-                    { "proName": "CRYPTOCAP:BTC.D", "title": "비트코인 도미넌스" },
-                    { "proName": "BINANCE:BTCUSDT", "title": "비트코인" }, // 비트코인 추가
+                    { "proName": "BINANCE:BTCUSDT", "title": "비트코인" }, // 순서 변경: 비트코인 (이전 5번)
+                    { "proName": "CRYPTOCAP:BTC.D", "title": "비트코인 도미넌스" }, // 순서 변경: 비트코인 도미넌스 (이전 4번)
                     { "proName": "KRX:KOSPI", "title": "코스피" },
                     { "proName": "KRX:KOSDAQ", "title": "코스닥" },
                     { "proName": "KRX:000660", "title": "SK하이닉스" }, 
@@ -1375,14 +1400,155 @@
                 "showSymbolLogo": true,
                 "colorTheme": theme,
                 "isTransparent": true,
-                "displayMode": "regular", // regular 모드가 스크롤을 자동으로 처리합니다.
+                "displayMode": "adaptive", // 전광판 멈춤 문제 개선을 위해 adaptive 모드 사용
                 "locale": "kr"
             });
             container.appendChild(script);
         }
 
-        function getMarketStatus() { /* Placeholder */ return { status: "점검 중", color: "bg-slate-500 text-white" }; } 
-        function updateMarketStatusBadge() { /* Placeholder */ }
+        // [NEW] KRX 시장 운영 상태 계산 함수
+        function getKrxStatus(kstNow) {
+            const day = kstNow.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+            const hours = kstNow.getHours();
+            const minutes = kstNow.getMinutes();
+            const totalMinutes = hours * 60 + minutes;
+
+            // KRX Market Hours (Mon-Fri)
+            const openTime = 9 * 60;       // 9:00 (540 min)
+            const closeTime = 15 * 60 + 30; // 15:30 (930 min)
+            const preMarketStart = 8 * 60 + 30; // 8:30 (510 min)
+            const afterHoursStart = 15 * 60 + 40; // 15:40 (940 min)
+            const afterHoursEnd = 18 * 60; // 18:00 (1080 min)
+            
+            if (day === 0 || day === 6) {
+                return { text: "주말 휴장", color: "bg-slate-600 dark:bg-slate-800 text-white", reason: "주말 정기 휴장" };
+            } else {
+                if (totalMinutes >= openTime && totalMinutes <= closeTime) {
+                    return { text: "정규장 운영 중", color: "bg-green-600 dark:bg-green-700 text-white", reason: "정상 거래 (9:00~15:30 KST)" };
+                } else if (totalMinutes >= preMarketStart && totalMinutes < openTime) {
+                    return { text: "장전 동시호가", color: "bg-cyan-600 dark:bg-cyan-700 text-white", reason: "시가 결정 중 (8:30~9:00 KST)" };
+                } else if (totalMinutes > closeTime && totalMinutes < afterHoursStart) {
+                    return { text: "종가/시간 외 준비", color: "bg-amber-500 dark:bg-amber-700 text-white", reason: "장 종료 및 정리 시간" };
+                } else if (totalMinutes >= afterHoursStart && totalMinutes <= afterHoursEnd) {
+                    return { text: "시간 외 거래", color: "bg-blue-600 dark:bg-blue-700 text-white", reason: "시간외 단일가 거래 (15:40~18:00 KST)" };
+                } else {
+                    return { text: "장 마감 (휴장)", color: "bg-red-600 dark:bg-red-700 text-white", reason: "정규/시간 외 거래 마감" };
+                }
+            }
+        }
+
+        // [NEW] US 시장 운영 상태 계산 함수
+        function getUsStatus(kstNow) {
+            const day = kstNow.getDay(); 
+            const hours = kstNow.getHours();
+            const minutes = kstNow.getMinutes();
+            
+            // US Market Hours in KST (simplified average)
+            // Active Window (Approx. 22:30 KST to 07:00 KST)
+            
+            // Check for weekends (US Market Closed Sat/Sun KST)
+            if (day === 6 || (day === 0 && hours < 22)) { // 토요일 전체, 일요일 22시 이전
+                return { text: "주말 휴장", color: "bg-slate-600 dark:bg-slate-800 text-white", reason: "미국 시장 정기 휴장" };
+            }
+            
+            // Simplified Active US Trading Hours (22:00 KST to 07:00 KST)
+            const isUsTradingActive = (hours >= 22) || (hours >= 0 && hours < 7);
+            
+            if (isUsTradingActive) {
+                // A simplified definition of regular trading hours based on KST ranges (DST assumed)
+                const regularOpenTime = 22 * 60 + 30; // 22:30 KST
+                const regularCloseTime = 5 * 60; // 05:00 KST
+                const totalMinutes = hours * 60 + minutes;
+
+                let isRegularHours = false;
+                
+                if (hours >= 22) { 
+                    isRegularHours = totalMinutes >= regularOpenTime;
+                } else if (hours >= 0 && hours < 7) { 
+                    isRegularHours = totalMinutes < regularCloseTime;
+                }
+                
+                if (isRegularHours) {
+                    return { text: "정규장 운영 중", color: "bg-green-600 dark:bg-green-700 text-white", reason: "실시간 거래 (미국 시간대)" };
+                } else {
+                     return { text: "장전/장후 거래", color: "bg-blue-600 dark:bg-blue-700 text-white", reason: "개장 전후 거래 가능 시간" };
+                }
+            } else { 
+                // Daytime KST (07:00 KST to 22:00 KST) -> US Market Closed
+                return { text: "장 마감 (휴장)", color: "bg-red-600 dark:bg-red-700 text-white", reason: "미국 시장 정규/시간 외 거래 마감" };
+            }
+        }
+        
+        // [REVISED] 메인 시장 상태 컨트롤러 함수
+        function checkMarketStatus() {
+            const now = new Date();
+            const kstOffset = 9 * 60; // KST is UTC+9
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const kstNow = new Date(utc + (kstOffset * 60000));
+            
+            const hours = kstNow.getHours();
+
+            let status = { text: "상태 확인 중", color: "bg-slate-500 dark:bg-slate-700 text-white", reason: "" };
+            let marketSource = '';
+
+            // 1. 시장 소스 결정 (KST 기준)
+            // KRX Focus: 08:00 KST (포함) ~ 19:00 KST (미포함)
+            if (hours >= 8 && hours < 19) {
+                marketSource = 'KRX';
+                status = getKrxStatus(kstNow);
+            } else {
+                // US Focus: 19:00 KST (포함) ~ 08:00 KST (미포함)
+                marketSource = 'US';
+                status = getUsStatus(kstNow);
+            }
+            
+            // 2. Heatmap 로드: 시장 소스가 변경되었거나, 초기 로드인 경우에만 Heatmap을 업데이트합니다.
+            // Heatmap 자체는 S&P 500을 사용함을 명시하고, KRX 히트맵 로직은 제거합니다.
+            if (currentMarketSource !== marketSource) {
+                 const theme = getCurrentTheme();
+                 // Heatmap은 항상 SPX500을 로드하지만, marketSource를 넘겨 아이콘/제목 업데이트의 기준으로 삼습니다.
+                 loadHeatmapWidget(theme, marketSource); 
+                 currentMarketSource = marketSource;
+            } else {
+                 // 시장 소스가 바뀌지 않았어도 테마나 다른 변경 사항을 위해 아이콘을 업데이트합니다.
+                 document.getElementById('main-widget-icon').classList.toggle('text-red-500', marketSource === 'US');
+                 document.getElementById('main-widget-icon').classList.toggle('text-blue-500', marketSource === 'KRX');
+            }
+
+
+            // 3. UI 업데이트
+            const mainTitleEl = document.getElementById('main-widget-title');
+            const badge = document.getElementById('market-status-badge');
+            const reasonEl = document.getElementById('market-status-reason');
+            const widgetUpdateTime = document.getElementById('widget-update-time');
+            
+            // 3.1. Main Title Update (요청 반영: 명칭을 'S&P 500 히트맵'으로 변경)
+            mainTitleEl.textContent = `S&P 500 히트맵`; 
+            
+            // 3.2. Status Badge Update
+            if (badge) {
+                // [수정] 상태 배지에 시장 구분 정보 포함 (예: [KRX] 정규장 운영 중)
+                const marketPrefix = marketSource === 'KRX' ? '[KRX]' : '[US]';
+                badge.textContent = `${marketPrefix} ${status.text}`;
+                badge.className = `market-status-badge ${status.color} transition-colors duration-200`;
+            }
+
+            // 3.3. Reason Update (Only show reason if not regular hours) - 요청 반영: 특별 사유만 표기
+            if (reasonEl) {
+                const isRegular = status.text.includes("정규장 운영 중");
+                // 정규장 운영 중이 아닐 때만 사유를 표시
+                reasonEl.textContent = !isRegular ? `(${status.reason})` : '';
+                reasonEl.classList.toggle('hidden', isRegular);
+            }
+            
+            // 3.4. Time Update
+            if (widgetUpdateTime) {
+                const dateString = kstNow.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+                widgetUpdateTime.textContent = `(업데이트: ${dateString} KST)`;
+            }
+        }
+
+
         function searchSymbolFromInput() { const input = document.getElementById('symbol-search-input').value.trim(); if(input) searchSymbol(input); }
         
         function searchSymbol(code) { 
@@ -1422,6 +1588,7 @@
             updateExchangeUI(); 
             switchDividendMode(currentDividendMode); 
             calculatePnL(); 
+            // 현재 선택된 모드로 토글하여 UI 및 계산을 업데이트
             toggleTargetMode(document.querySelector('input[name="target-mode"]:checked')?.value || 'cap'); 
             calcAvg(); 
         }
@@ -1636,6 +1803,7 @@
             rateElement.classList.toggle('dark:text-green-300', netProfit >= 0);
         }
 
+        // [수정] 목표 단가 계산기 토글 로직
         function toggleTargetMode(mode) {
             document.getElementById('mode-cap').checked = mode === 'cap';
             document.getElementById('mode-rate').checked = mode === 'rate';
@@ -1644,19 +1812,43 @@
             document.getElementById('target-cap-input-row').classList.toggle('hidden', mode !== 'cap');
             document.getElementById('target-return-rate-input-row').classList.toggle('hidden', mode !== 'rate');
             
-            document.getElementById('current-price-label').textContent = mode === 'cap' ? '현재가' : '매수가';
-            document.getElementById('target-price-label').textContent = mode === 'cap' ? '목표 단가' : '목표 매도가';
+            const currentPriceLabel = document.getElementById('current-price-label');
+            const targetPriceLabel = document.getElementById('target-price-label');
+            const targetRateInputLabel = document.getElementById('target-rate-input-label'); // NEW ID
+            const targetRateRow = document.getElementById('target-rate-row'); // The auxiliary output row
+
+            if (mode === 'cap') {
+                // 시가총액 기반: 목표 시총 입력 -> 목표 단가 출력
+                currentPriceLabel.textContent = '현재가';
+                targetPriceLabel.textContent = '목표 단가:';
+                targetRateRow.classList.remove('hidden'); // 시총/수익률 변화를 보조 출력으로 보여줌
+                
+                // 입력 필드 초기화/라벨 원복 (목표 수익률 %)
+                targetRateInputLabel.textContent = '목표 수익률 (%)';
+                document.getElementById('target-return-rate').placeholder = '예: 20';
+            } else { 
+                // 수익률 기반: 목표 매도가 입력 -> 목표 수익률 출력 (Reverse P&L)
+                currentPriceLabel.textContent = '매수가';
+                targetPriceLabel.textContent = '목표 수익률:'; // SWAP: Output is now Rate
+                targetRateInputLabel.textContent = '목표 매도가'; // SWAP: Input is now Price
+                targetRateRow.classList.add('hidden'); // 보조 출력 숨김 (메인 출력이 수익률이므로)
+                
+                // 입력 필드 플레이스홀더 변경
+                document.getElementById('target-return-rate').placeholder = '예: 120000';
+            }
             
             calculateTargetAnalysis();
         }
         
+        // [수정] 목표 단가 계산기 계산 로직
         function calculateTargetAnalysis() {
             const currentPrice = safeParseNumber(document.getElementById('target-current-price').value);
             const shares = safeParseNumber(document.getElementById('target-shares').value);
             const mode = document.querySelector('input[name="target-mode"]:checked')?.value || 'cap';
             
-            let targetPrice = 0;
-            let rateChange = 0;
+            let mainOutputValue = 0; // 이 값은 targetPrice (cap 모드) 또는 rateChange (rate 모드)가 됨
+            let targetPrice = currentPrice; // 평가 금액 계산을 위한 목표 가격
+            let rateChange = 0; // 비율 변화
             
             if (mode === 'cap') {
                 const currentCapTrillion = safeParseNumber(document.getElementById('target-current-cap').value);
@@ -1666,34 +1858,63 @@
                     // 목표 주가 = 현재 주가 * (목표 시총 / 현재 시총)
                     targetPrice = currentPrice * (targetCapTrillion / currentCapTrillion);
                     rateChange = ((targetCapTrillion / currentCapTrillion) - 1) * 100;
+                    mainOutputValue = targetPrice; // 출력은 목표 가격 (원)
                 }
-            } else { // mode === 'rate'
-                const targetReturnRate = safeParseNumber(document.getElementById('target-return-rate').value) / 100;
+            } else { // mode === 'rate' -> Input Target Price, Output Required Return Rate (SWAP)
+                // target-return-rate 입력 필드를 목표 매도가로 사용
+                const targetSellingPrice = safeParseNumber(document.getElementById('target-return-rate').value); 
                 
-                // 목표 주가 = 현재가 * (1 + 목표 수익률)
-                targetPrice = currentPrice * (1 + targetReturnRate);
-                rateChange = targetReturnRate * 100;
+                if (currentPrice > 0) {
+                    // 목표 수익률 = (목표 매도가 - 매수가) / 매수가 * 100
+                    rateChange = ((targetSellingPrice - currentPrice) / currentPrice) * 100;
+                    targetPrice = targetSellingPrice; // 목표 가격은 입력값으로 설정
+                    mainOutputValue = rateChange; // 출력은 목표 수익률 (%)
+                }
             }
             
             const initialValuation = currentPrice * shares;
             const targetValuation = targetPrice * shares;
             const targetProfit = targetValuation - initialValuation;
             
-            document.getElementById('target-price').textContent = formatCurrency(targetPrice, '');
+            const mainOutputEl = document.getElementById('target-price');
+            
+            // 메인 출력 업데이트 및 포맷팅
+            if (mode === 'cap') {
+                mainOutputEl.textContent = formatCurrency(mainOutputValue, ''); // 목표 단가 (원)
+                document.getElementById('target-rate-row').classList.remove('hidden'); 
+                document.getElementById('target-rate').textContent = `${rateChange.toFixed(2)}%`; // 시총/수익률 변화 (비율)
+            } else { // mode === 'rate' (Reverse P&L)
+                mainOutputEl.textContent = `${mainOutputValue.toFixed(2)}%`; // 목표 수익률 (비율)
+                document.getElementById('target-rate-row').classList.add('hidden'); // 보조 비율 출력 숨김
+            }
+
             document.getElementById('target-valuation').textContent = formatCurrency(targetValuation, '');
             
             const profitEl = document.getElementById('target-profit');
             profitEl.textContent = formatCurrency(targetProfit, '');
             
-            const rateEl = document.getElementById('target-rate');
-            rateEl.textContent = `${rateChange.toFixed(2)}%`;
-            
-            // 색상 업데이트
-            profitEl.classList.toggle('text-red-600', targetProfit < 0);
-            profitEl.classList.toggle('text-green-700', targetProfit >= 0);
-            profitEl.classList.toggle('dark:text-red-300', targetProfit < 0);
-            profitEl.classList.toggle('dark:text-green-300', targetProfit >= 0);
+            // 색상 업데이트 (수익률 기반 모드에서 메인 출력(수익률)의 색상도 조정)
+            const isProfit = targetProfit >= 0;
+
+            // 예상 수익금 색상
+            profitEl.classList.toggle('text-red-600', !isProfit);
+            profitEl.classList.toggle('text-green-700', isProfit);
+            profitEl.classList.toggle('dark:text-red-300', !isProfit);
+            profitEl.classList.toggle('dark:text-green-300', isProfit);
+
+            // 메인 출력 색상 (cap: 단가 -> indigo, rate: 수익률 -> green/red)
+            if (mode === 'cap') {
+                mainOutputEl.classList.add('text-indigo-700', 'dark:text-indigo-300');
+                mainOutputEl.classList.remove('text-red-600', 'text-green-700', 'dark:text-red-300', 'dark:text-green-300');
+            } else {
+                mainOutputEl.classList.toggle('text-red-600', !isProfit);
+                mainOutputEl.classList.toggle('text-green-700', isProfit);
+                mainOutputEl.classList.toggle('dark:text-red-300', !isProfit);
+                mainOutputEl.classList.toggle('dark:text-green-300', isProfit);
+                mainOutputEl.classList.remove('text-indigo-700', 'dark:text-indigo-300');
+            }
         }
+
 
         // === 금융소득 종합과세 로직 ===
         function addFinancial() {
@@ -1898,7 +2119,7 @@
             document.getElementById('summary-grand-total').textContent = grandTotal.toLocaleString() + ' 원';
 
             // 4. 하단 세금 계산기 업데이트
-            updateTaxDetail(finTotal, taxableBaseOther);
+            updateTaxDetail(finTotal, otherTotal); // finIncome 대신 finTotal 사용
         }
         
         function updateTaxDetail(finIncome, otherIncome) {
@@ -1943,7 +2164,7 @@
                  // 2. 초과분은 누진세율 적용 (비교과세 간이 계산)
                  const excessPart = finIncome - limit;
                  
-                 // (종합소득세 + 초과분) 세액
+                 // (기타소득 + 초과분) 세액
                  const totalIncomeForTax = otherIncome + excessPart;
                  const totalTaxBeforeLocal = getIncomeTax(totalIncomeForTax);
                  
@@ -1996,21 +2217,20 @@
             otherData = savedOther ? JSON.parse(savedOther) : [];
             
             // 5. 초기 페이지 로드: 대시보드로 강제 시작
-            // 모든 페이지 숨김 처리 (대시보드는 HTML에 page-hidden이 없으므로, 나머지만 숨김)
             document.getElementById('page-routine').classList.add('page-hidden');
             document.getElementById('page-tools').classList.add('page-hidden');
             document.getElementById('page-tax').classList.add('page-hidden');
             
-            // 대시보드 활성화
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
             document.getElementById('nav-dashboard').classList.add('active');
             
-            // 6. 위젯 로드 (대시보드 내용)
-            const theme = getCurrentTheme();
-            loadHeatmapWidget(theme); 
-            loadTickerWidget(theme); 
-            updateMarketStatusBadge(); 
+            // 6. 위젯 로드 (대시보드 내용) - 초기 시장 상태 결정 및 위젯 로드
+            checkMarketStatus();
+            loadTickerWidget(getCurrentTheme()); 
             
-            // 루틴 페이지의 내부 모드도 한번 업데이트해서 버튼 텍스트를 최신화
+            // [NEW] 장운영 상태 1분 인터벌 설정 (checkMarketStatus가 시장 소스 결정 및 위젯 로드 역할도 수행)
+            marketStatusInterval = setInterval(checkMarketStatus, 60000); 
+            
             updateLinkModeUI();
         }
         

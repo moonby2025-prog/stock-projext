@@ -409,7 +409,7 @@
             </div>
         </div>
         
-        <!-- PAGE 4: 금융소득종합과세 전용 페이지 -->
+        <!-- PAGE 4: 금융소득 종합과세 전용 페이지 -->
         <div id="page-tax" class="page-hidden mt-6 animate-fade-in pb-6">
             <!-- 1. 상단 요약 카드 (3열) -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -1354,15 +1354,24 @@
                     { "proName": "FOREXCOM:SPXUSD", "title": "S&P 500" },
                     { "proName": "NASDAQ:QQQ", "title": "나스닥 QQQ ETF" }, // 나스닥 100 지수를 QQQ ETF로 대체
                     { "proName": "FX_IDC:USDKRW", "title": "원달러 환율" },
+                    { "proName": "CRYPTOCAP:BTC.D", "title": "비트코인 도미넌스" },
+                    { "proName": "BINANCE:BTCUSDT", "title": "비트코인" }, // 비트코인 추가
                     { "proName": "KRX:KOSPI", "title": "코스피" },
                     { "proName": "KRX:KOSDAQ", "title": "코스닥" },
+                    { "proName": "KRX:000660", "title": "SK하이닉스" }, 
+                    { "proName": "KRX:035420", "title": "NAVER" }, 
+                    { "proName": "KRX:207940", "title": "삼성바이오로직스" }, 
+                    { "proName": "KRX:005930", "title": "삼성전자" }, 
                     { "proName": "KRX:445680", "title": "큐리옥스" }, 
-                    { "proName": "KRX:237690", "title": "에스티팜" } 
+                    { "proName": "KRX:237690", "title": "에스티팜" }, 
+                    { "proName": "NYSE:JPM", "title": "JP모건" },
+                    { "proName": "NASDAQ:GOOGL", "title": "알파벳 (Google)" },
+                    { "proName": "NYSE:V", "title": "비자" }
                 ],
                 "showSymbolLogo": true,
                 "colorTheme": theme,
                 "isTransparent": true,
-                "displayMode": "regular", 
+                "displayMode": "regular", // regular 모드가 스크롤을 자동으로 처리합니다.
                 "locale": "kr"
             });
             container.appendChild(script);

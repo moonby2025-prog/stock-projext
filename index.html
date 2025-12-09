@@ -164,7 +164,7 @@
             z-index: 10; min-width: 140px; text-align: center;
             background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
             color: white; padding: 0.75rem 1rem; border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* [FIXED] Corrupted CSS value */
             font-weight: 700; font-size: 0.95rem; position: relative;
         }
         .dark .mindmap-node-main {
@@ -227,16 +227,17 @@
                     <button onclick="switchPage('dashboard')" id="nav-dashboard" class="nav-tab active px-4 py-2 text-sm flex items-center gap-2 whitespace-nowrap">
                         <i class="fa-solid fa-chart-bar"></i> 대시보드
                     </button>
-                    <!-- [수정] 오늘의 루틴 탭 추가 -->
+                    <!-- [수정] 오늘의 루틴 -> 루틴 -->
                     <button onclick="switchPage('routine')" id="nav-routine" class="nav-tab px-4 py-2 text-sm flex items-center gap-2 whitespace-nowrap">
-                        <i class="fa-solid fa-clipboard-list"></i> 오늘의 루틴
+                        <i class="fa-solid fa-clipboard-list"></i> 루틴
                     </button>
+                    <!-- [수정] 도구/계산기 -> 도구 -->
                     <button onclick="switchPage('tools')" id="nav-tools" class="nav-tab px-4 py-2 text-sm flex items-center gap-2 whitespace-nowrap">
-                        <i class="fa-solid fa-calculator"></i> 도구/계산기
+                        <i class="fa-solid fa-calculator"></i> 도구
                     </button>
-                    <!-- 금융소득 탭 -->
+                    <!-- [수정] 금융소득종합과세 -> 금융과세 -->
                     <button onclick="switchPage('tax')" id="nav-tax" class="nav-tab px-4 py-2 text-sm flex items-center gap-2 whitespace-nowrap">
-                        <i class="fa-solid fa-file-invoice-dollar"></i> 금융소득종합과세
+                        <i class="fa-solid fa-file-invoice-dollar"></i> 금융과세
                     </button>
                 </div>
 
@@ -795,8 +796,22 @@
             renderHomeLinks(); 
         }
         function moveLink(category, index, direction) { const list = quickLinks[category]; const newIndex = index + direction; if (newIndex >= 0 && newIndex < list.length) { [list[index], list[newIndex]] = [list[newIndex], list[index]]; saveLinks(); } }
-        function deleteLink(category, index) { if(confirm('삭제?')) { quickLinks[category].splice(index, 1); saveLinks(); } }
-        function addLink(category) { const name = prompt('이름:'); if(!name) return; const url = prompt('URL:', 'https://'); if(!url) return; quickLinks[category].push({ name, url, icon: 'fa-link', color: 'bg-slate-100 text-slate-700' }); saveLinks(); }
+        function deleteLink(category, index) { 
+            // NOTE: confirm() 대신 커스텀 UI 사용 권장
+            if(window.confirm('삭제하시겠습니까?')) { 
+                quickLinks[category].splice(index, 1); 
+                saveLinks(); 
+            } 
+        }
+        function addLink(category) { 
+            // NOTE: prompt() 대신 커스텀 UI 사용 권장
+            const name = window.prompt('이름:'); 
+            if(!name) return; 
+            const url = window.prompt('URL:', 'https://'); 
+            if(!url) return; 
+            quickLinks[category].push({ name, url, icon: 'fa-link', color: 'bg-slate-100 text-slate-700' }); 
+            saveLinks(); 
+        }
         
         function openFavoriteSymbolsModal() { document.getElementById('favorite-symbols-modal').classList.remove('hidden'); renderModalList(); }
         function closeFavoriteSymbolsModal() { document.getElementById('favorite-symbols-modal').classList.add('hidden'); }

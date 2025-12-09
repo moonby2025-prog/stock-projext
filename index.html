@@ -55,7 +55,7 @@
         /* 숨김 클래스 */
         .page-hidden { display: none !important; }
 
-        /* [수정] 히트맵 컨테이너 높이 설정 (모바일 최적화) */
+        /* 히트맵 컨테이너 높이 설정 (모바일 최적화) */
         .market-widget-area { 
             min-height: 200px; /* Mobile min-height for placeholder */
             height: auto; 
@@ -122,7 +122,7 @@
             background-color: #0f172a; color: #f8fafc;
         }
 
-        /* [NEW] 금융소득 계산기 스타일 강화 */
+        /* 금융소득 계산기 스타일 강화 */
         .tax-gauge-container {
             position: relative; height: 1.5rem; background: #e2e8f0;
             border-radius: 9999px; overflow: hidden; box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.06);
@@ -144,7 +144,7 @@
         /* TradingView Widget Containers */
         .tradingview-widget-container { width: 100%; height: 100%; }
 
-        /* [NEW] Mind Map Style CSS */
+        /* Mind Map Style CSS */
         .mindmap-root {
             display: flex; flex-direction: column; gap: 2rem;
         }
@@ -164,7 +164,7 @@
             z-index: 10; min-width: 140px; text-align: center;
             background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
             color: white; padding: 0.75rem 1rem; border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* [FIXED] Corrupted CSS value */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             font-weight: 700; font-size: 0.95rem; position: relative;
         }
         .dark .mindmap-node-main {
@@ -256,7 +256,7 @@
         <!-- PAGE 1: 통합 대시보드 (루틴 섹션 제거) -->
         <div id="page-dashboard" class="space-y-6 animate-fade-in">
             
-            <!-- [NEW] 3. 장중 증시 상황 (Ticker Tape Widget) -->
+            <!-- 3. 장중 증시 상황 (Ticker Tape Widget) -->
             <!-- 주의: KRX 데이터는 로컬 파일(file://) 실행 시 차단될 수 있습니다. (웹서버 권장) -->
             <div class="w-full bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 overflow-hidden h-14">
                 <div class="tradingview-widget-container">
@@ -286,7 +286,7 @@
                         <div id="heatmap-container" class="tradingview-widget-container hidden md:block">
                             <div class="tradingview-widget-container__widget"></div>
                         </div>
-                        <!-- [수정] 모바일 환경(md 미만)에서만 표시되는 간이 요약 -->
+                        <!-- 모바일 환경(md 미만)에서만 표시되는 간이 요약 -->
                         <div id="mobile-market-summary" class="md:hidden p-4 bg-slate-50 dark:bg-slate-900/50 min-h-[200px] flex items-center justify-center">
                             <div class="text-center space-y-2">
                                 <i class="fa-solid fa-mobile-screen-button text-4xl text-indigo-400"></i>
@@ -316,10 +316,10 @@
             </div>
         </div>
 
-        <!-- [NEW] PAGE 2: 오늘의 루틴/링크 (분리된 탭) -->
+        <!-- PAGE 2: 오늘의 루틴/링크 (분리된 탭) -->
         <div id="page-routine" class="page-hidden space-y-6 animate-fade-in">
              <div id="quick-links-section" class="space-y-6 pt-4 border-t border-slate-200 dark:border-slate-700">
-                <div class="flex justify-between items-end mb-6 pt-4 pb-4">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-end mb-6 pt-4 pb-4">
                     <div class="flex flex-col sm:flex-row sm:items-end sm:gap-4">
                         <h2 class="text-2xl font-extrabold text-slate-800 dark:text-white mb-1 leading-tight">오늘의 루틴 목록</h2>
                         <div class="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-xl shadow-inner mt-2 sm:mt-0" id="link-mode-switch">
@@ -328,13 +328,14 @@
                             <button onclick="switchLinkMode('daily')" id="mode-daily" class="nav-tab px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-600 dark:text-slate-300"><i class="fa-solid fa-home mr-1"></i> 일상</button>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 mt-4 sm:mt-0">
                         <span class="text-sm font-bold text-slate-600 dark:text-slate-300">편집 모드</span>
                         <button onclick="toggleEditMode()" id="edit-mode-btn" class="w-12 h-6 bg-slate-300 rounded-full relative transition-colors duration-200">
                             <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform duration-200 shadow-sm" id="edit-mode-knob"></div>
                         </button>
                     </div>
                 </div>
+                <!-- REMOVED: 새 카테고리/주제 추가 버튼 (편집 모드 시 노출) - 이제 목록 내부에서 처리 -->
                 <div id="home-links-container" class="min-h-[300px]"></div>
             </div>
         </div>
@@ -408,7 +409,7 @@
             </div>
         </div>
         
-        <!-- [NEW] PAGE 4: 금융소득종합과세 전용 페이지 -->
+        <!-- PAGE 4: 금융소득종합과세 전용 페이지 -->
         <div id="page-tax" class="page-hidden mt-6 animate-fade-in pb-6">
             <!-- 1. 상단 요약 카드 (3열) -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -658,6 +659,69 @@
             </div>
         </div>
 
+        <!-- 링크/카테고리 추가/편집 범용 모달 -->
+        <div id="add-edit-modal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-70 z-[100] flex items-center justify-center transition-opacity duration-300">
+            <div class="bg-white dark:bg-slate-800 rounded-xl w-full max-w-md shadow-2xl transform scale-100 transition-transform duration-300">
+                <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                    <h3 id="add-edit-modal-title" class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">새 링크 추가</h3>
+                    <button onclick="closeAddEditModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"><i class="fa-solid fa-xmark text-2xl"></i></button>
+                </div>
+                <div class="p-5 space-y-5">
+                    
+                    <!-- 카테고리 추가 시 노출되는 그룹 -->
+                    <div id="add-category-input-group" class="hidden">
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">카테고리 이름 (새 섹션/주제)</label>
+                        <input type="text" id="modal-category-name" placeholder="예: 해외주식 분석 채널" class="w-full p-3 border border-slate-300 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                        <p class="text-xs text-slate-400 mt-2">새로운 분류 섹션(큰 제목)을 만듭니다. (예: 아침 필수 체크)</p>
+                    </div>
+
+                    <!-- 링크 추가 시 노출되는 그룹 -->
+                    <div id="add-link-input-group">
+                        <p id="add-link-category-display" class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-3"></p>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">링크 이름</label>
+                                <input type="text" id="modal-link-name" placeholder="예: 매일경제 뉴스" class="w-full p-3 border border-slate-300 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">URL 주소</label>
+                                <input type="url" id="modal-link-url" placeholder="예: https://media.naver.com/press/009/newspaper" class="w-full p-3 border border-slate-300 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div id="icon-color-group">
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">아이콘 (FontAwesome) & 색상 코드</label>
+                                <div class="flex gap-3">
+                                    <input type="text" id="modal-link-icon" placeholder="fa-chart-bar" class="w-1/2 p-3 border border-slate-300 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white text-xs">
+                                    <input type="text" id="modal-link-color" placeholder="bg-blue-100 text-blue-700" class="w-1/2 p-3 border border-slate-300 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white text-xs">
+                                </div>
+                                <p class="text-xs text-slate-400 mt-1">FontAwesome 아이콘 이름과 Tailwind CSS 색상 클래스 입력</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
+                    <button onclick="closeAddEditModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-lg text-sm font-bold transition-colors dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">취소</button>
+                    <button id="add-edit-modal-save-btn" onclick="saveNewItem()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-md"><i class="fa-solid fa-save mr-1"></i> 저장</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirmation Modal (Alert replacement) -->
+        <div id="confirm-modal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-70 z-[110] flex items-center justify-center transition-opacity duration-300">
+            <div class="bg-white dark:bg-slate-800 rounded-xl w-full max-w-sm shadow-2xl transform scale-100 transition-transform duration-300">
+                <div class="p-5 border-b border-slate-200 dark:border-slate-700">
+                    <h3 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2"><i class="fa-solid fa-circle-question text-red-500"></i> 확인 필요</h3>
+                </div>
+                <div class="p-5">
+                    <p id="confirm-modal-message" class="text-slate-700 dark:text-slate-300 mb-6"></p>
+                </div>
+                <div class="p-4 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
+                    <button onclick="closeConfirmModal(false)" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-lg text-sm font-bold transition-colors dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">취소</button>
+                    <button id="confirm-modal-yes-btn" onclick="closeConfirmModal(true)" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-md"><i class="fa-solid fa-trash-can mr-1"></i> 삭제</button>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <script>
@@ -696,7 +760,7 @@
             ]
         };
 
-        const BLOG_MAP_DATA = {
+        const DEFAULT_BLOG_MAP_DATA = {
             "🧬 큐리옥스바이오시스템즈": [
                 {name: "한계를 깨는 사람", url: "https://blog.naver.com/unlimitedi"},
                 {name: "나는 전설이다", url: "https://blog.naver.com/legendyu"},
@@ -731,10 +795,12 @@
         const EXCHANGE_RATES = { 'USD': { krw: 1380, name: "미국 달러" }, 'JPY': { krw: 8.90, name: "일본 엔" }, 'CNY': { krw: 190, name: "중국 위안" }, 'EUR': { krw: 1480, name: "유로" }, 'VND': { krw: 0.054, name: "베트남 동" }, 'THB': { krw: 37.5, name: "태국 바트" }, 'PHP': { krw: 23.5, name: "필리핀 페소" }, 'INR': { krw: 16.5, name: "인도 루피" }, 'ARS': { krw: 1.5, name: "아르헨티나 페소" } };
         const TAX_THRESHOLD = 20000000; // 금융소득 종합과세 기준 금액 (2천만원)
 
-        let quickLinks = {}, favoriteSymbols = [], isEditMode = false, currentLinkMode = 'investment', currentDividendMode = 'KOR', currentBaseCurrency = 'USD', currentTargetCurrency = 'KRW';
+        let quickLinks = {}, blogMapData = {}, favoriteSymbols = [], isEditMode = false, currentLinkMode = 'investment', currentDividendMode = 'KOR', currentBaseCurrency = 'USD', currentTargetCurrency = 'KRW';
         let calculatorsInitialized = false;
         let finData = [];
         let otherData = [];
+        let currentEditingCategory = ''; // 현재 편집 중인 카테고리 (링크 추가/삭제용)
+        let confirmCallback = null; // Confirmation callback
 
         // === 유틸리티 함수 ===
         // 문자열에서 쉼표 제거 후 숫자로 파싱, 실패 시 0 반환
@@ -753,6 +819,16 @@
             return new Intl.NumberFormat('ko-KR').format(num) + unit;
         }
 
+        function saveLinks() { 
+            localStorage.setItem('myQuickLinks', JSON.stringify(quickLinks)); 
+            renderHomeLinks(); 
+        }
+        
+        function saveBlogMap() {
+            localStorage.setItem('myBlogMapData', JSON.stringify(blogMapData));
+            renderHomeLinks();
+        }
+
         // === Dark Mode 토글 함수 수정 ===
         function toggleDarkMode() {
             const isDark = document.documentElement.classList.toggle('dark');
@@ -760,8 +836,10 @@
             updateThemeIcon(isDark);
             
             // 테마 변경 시 위젯도 새로 로드 (색상 반영)
-            loadHeatmapWidget(getCurrentTheme());
-            loadTickerWidget(getCurrentTheme());
+            if (document.getElementById('page-dashboard').classList.contains('page-hidden') === false) {
+                 loadHeatmapWidget(getCurrentTheme());
+                 loadTickerWidget(getCurrentTheme());
+            }
         }
 
         function updateThemeIcon(isDark) {
@@ -773,46 +851,186 @@
                 icon.classList.toggle('text-amber-400', isDark);
             }
         }
+        
+        // Confirmation Modal Functions (alert/confirm 대체)
+        function openConfirmModal(message, callback) {
+            confirmCallback = callback;
+            document.getElementById('confirm-modal-message').textContent = message;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal(confirmed) {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            if (confirmed && confirmCallback) {
+                confirmCallback();
+            }
+            confirmCallback = null;
+        }
+
 
         // === 초기화 및 대시보드 함수 ===
-        function initLinks() { const saved = localStorage.getItem('myQuickLinks'); if(saved) quickLinks=JSON.parse(saved); else quickLinks=DEFAULT_QUICK_LINKS; updateLinkModeUI(); renderHomeLinks(); }
+        function initLinks() { 
+            const savedLinks = localStorage.getItem('myQuickLinks'); 
+            const allLinks = savedLinks ? JSON.parse(savedLinks) : {};
+
+            // 기본 링크를 병합 (사용자 커스텀을 보존하기 위해)
+            quickLinks = {
+                ...DEFAULT_QUICK_LINKS,
+                ...allLinks
+            };
+
+            const savedBlogs = localStorage.getItem('myBlogMapData');
+            blogMapData = savedBlogs ? JSON.parse(savedBlogs) : DEFAULT_BLOG_MAP_DATA;
+            
+            // 초기 모드 로드
+            const savedLinkMode = localStorage.getItem('currentLinkMode');
+            if (savedLinkMode) {
+                currentLinkMode = savedLinkMode;
+            }
+
+            updateLinkModeUI(); 
+            if (document.getElementById('page-routine').classList.contains('page-hidden') === false) {
+                renderHomeLinks(); 
+            }
+        }
         function initWatchlist() { let watchlist = JSON.parse(localStorage.getItem('myWatchlist')); if (!watchlist) localStorage.setItem('myWatchlist', JSON.stringify([{ s: "KRX:005930" }, { s: "NASDAQ:TSLA" }])); }
         function initFavoriteSymbols() { const saved = localStorage.getItem('favoriteSymbols'); favoriteSymbols = saved ? JSON.parse(saved) : DEFAULT_FAVORITE_SYMBOLS; renderFavoriteSymbols(); }
-        function saveLinks() { localStorage.setItem('myQuickLinks', JSON.stringify(quickLinks)); renderHomeLinks(); }
         
         function toggleEditMode() { 
             isEditMode = !isEditMode; 
             const btn = document.getElementById('edit-mode-btn'); 
             const knob = document.getElementById('edit-mode-knob'); 
+            const linksContainer = document.getElementById('home-links-container');
+
             if(isEditMode) { 
                 btn.classList.replace('bg-slate-300', 'bg-blue-600'); 
                 knob.classList.replace('left-1', 'left-7'); 
-                document.getElementById('home-links-container').classList.add('editing'); 
+                linksContainer.classList.add('editing'); 
             } else { 
                 btn.classList.replace('bg-blue-600', 'bg-slate-300'); 
                 knob.classList.replace('left-7', 'left-1'); 
-                document.getElementById('home-links-container').classList.remove('editing'); 
+                linksContainer.classList.remove('editing'); 
             } 
             renderHomeLinks(); 
         }
-        function moveLink(category, index, direction) { const list = quickLinks[category]; const newIndex = index + direction; if (newIndex >= 0 && newIndex < list.length) { [list[index], list[newIndex]] = [list[newIndex], list[index]]; saveLinks(); } }
-        function deleteLink(category, index) { 
-            // NOTE: confirm() 대신 커스텀 UI 사용 권장
-            if(window.confirm('삭제하시겠습니까?')) { 
-                quickLinks[category].splice(index, 1); 
-                saveLinks(); 
+
+        function moveLink(category, index, direction) { 
+            const linksData = currentLinkMode === 'blogs' ? blogMapData : quickLinks;
+            const list = linksData[category]; 
+            const newIndex = index + direction; 
+            
+            if (newIndex >= 0 && newIndex < list.length) { 
+                [list[index], list[newIndex]] = [list[newIndex], list[index]]; 
+                if (currentLinkMode === 'blogs') { saveBlogMap(); } else { saveLinks(); }
             } 
         }
-        function addLink(category) { 
-            // NOTE: prompt() 대신 커스텀 UI 사용 권장
-            const name = window.prompt('이름:'); 
-            if(!name) return; 
-            const url = window.prompt('URL:', 'https://'); 
-            if(!url) return; 
-            quickLinks[category].push({ name, url, icon: 'fa-link', color: 'bg-slate-100 text-slate-700' }); 
-            saveLinks(); 
+        
+        function deleteLink(category, index) { 
+            const linksData = currentLinkMode === 'blogs' ? blogMapData : quickLinks;
+            const linkName = linksData[category][index].name;
+            openConfirmModal(`'${linkName}' 링크를 삭제하시겠습니까?`, () => {
+                linksData[category].splice(index, 1); 
+                if (currentLinkMode === 'blogs') { saveBlogMap(); } else { saveLinks(); }
+            }); 
+        }
+
+        function openAddLinkModal(category) { 
+            currentEditingCategory = category;
+            
+            // 모달 초기화
+            document.getElementById('modal-link-name').value = '';
+            document.getElementById('modal-link-url').value = 'https://';
+            document.getElementById('modal-link-icon').value = 'fa-link';
+            document.getElementById('modal-link-color').value = 'bg-slate-100 text-slate-700';
+
+            // 모달 설정 (링크 추가 모드)
+            const title = currentLinkMode === 'blogs' ? `'${category}'에 새 인사이트 링크 추가` : `'${category}'에 새 링크 추가`;
+            const display = currentLinkMode === 'blogs' ? `[${category}] 주제에 추가` : `[${category}] 카테고리에 추가`;
+            
+            document.getElementById('add-edit-modal-title').textContent = title;
+            document.getElementById('add-link-category-display').textContent = display;
+            document.getElementById('add-category-input-group').classList.add('hidden');
+            document.getElementById('add-link-input-group').classList.remove('hidden');
+            
+            // Mind Map은 아이콘/색상 불필요
+            document.getElementById('icon-color-group').classList.toggle('hidden', currentLinkMode === 'blogs'); 
+            
+            document.getElementById('add-edit-modal-save-btn').onclick = saveNewLink;
+            document.getElementById('add-edit-modal').classList.remove('hidden');
+        }
+
+        // 카테고리 추가 모달 열기 (투자/일상/인사이트 주제 모두 대응)
+        function openAddCategoryModal(mode) {
+            currentLinkMode = mode; // 현재 탭 모드 저장
+            
+            // 모달 초기화
+            document.getElementById('modal-category-name').value = '';
+            
+            // 모달 설정 (카테고리 추가 모드)
+            let titlePrefix = mode === 'investment' ? '투자 루틴' : mode === 'daily' ? '일상 루틴' : '인사이트 맵';
+            document.getElementById('add-edit-modal-title').textContent = `${titlePrefix}에 새 카테고리/주제 추가`;
+            document.getElementById('add-link-input-group').classList.add('hidden');
+            document.getElementById('add-category-input-group').classList.remove('hidden');
+            
+            document.getElementById('add-edit-modal-save-btn').onclick = saveNewCategory;
+            document.getElementById('add-edit-modal').classList.remove('hidden');
         }
         
+        // 모달 닫기
+        function closeAddEditModal() {
+            document.getElementById('add-edit-modal').classList.add('hidden');
+            // 입력 필드 초기화
+            document.getElementById('modal-category-name').value = ''; 
+            document.getElementById('modal-link-name').value = '';
+            document.getElementById('modal-link-url').value = '';
+        }
+
+        // 새 링크 저장 (투자/일상/인사이트 모두 대응)
+        function saveNewLink() {
+            const name = document.getElementById('modal-link-name').value.trim();
+            const url = document.getElementById('modal-link-url').value.trim();
+
+            if (!name || !url || url === 'https://') { console.error('이름과 URL을 확인해주세요.'); return; } 
+
+            if (currentLinkMode === 'blogs') {
+                 // 인사이트 맵 링크 저장
+                 if (blogMapData[currentEditingCategory]) {
+                    blogMapData[currentEditingCategory].push({ name: name, url: url });
+                    saveBlogMap();
+                 }
+            } else {
+                // 투자/일상 링크 저장
+                const icon = document.getElementById('modal-link-icon').value.trim() || 'fa-link';
+                const color = document.getElementById('modal-link-color').value.trim() || 'bg-slate-100 text-slate-700';
+                const newLink = { name, url, icon: `${icon}`, color }; 
+            
+                if (quickLinks[currentEditingCategory]) {
+                    quickLinks[currentEditingCategory].push(newLink);
+                    saveLinks();
+                }
+            }
+            closeAddEditModal();
+        }
+        
+        // 새 카테고리 저장 (최상위 카테고리/주제 추가 기능)
+        function saveNewCategory() {
+            const name = document.getElementById('modal-category-name').value.trim();
+            if (!name) { console.error('카테고리 이름을 입력해주세요.'); return; }
+
+            if (currentLinkMode === 'investment' || currentLinkMode === 'daily') {
+                if (quickLinks[name]) { console.error('이미 존재하는 카테고리 이름입니다.'); return; }
+                quickLinks[name] = []; // <-- Adds the new category key to quickLinks
+                saveLinks();
+            } else if (currentLinkMode === 'blogs') {
+                if (blogMapData[name]) { console.error('이미 존재하는 주제 이름입니다.'); return; }
+                blogMapData[name] = [];
+                saveBlogMap(); 
+            }
+
+            closeAddEditModal();
+        }
+
+
         function openFavoriteSymbolsModal() { document.getElementById('favorite-symbols-modal').classList.remove('hidden'); renderModalList(); }
         function closeFavoriteSymbolsModal() { document.getElementById('favorite-symbols-modal').classList.add('hidden'); }
         function addSymbolFromModal() { 
@@ -821,7 +1039,6 @@
             const code = codeInput.value.trim();
             const name = nameInput.value.trim();
             
-            // NOTE: alert() 대신 커스텀 UI 사용 권장
             if(!code || !name) { console.error('종목 코드와 종목명을 입력해주세요.'); return; } 
             
             favoriteSymbols.push({ code, name });
@@ -847,15 +1064,17 @@
                 list.appendChild(div);
             });
         }
+        
         function deleteFavoriteSymbol(index) {
-            // NOTE: confirm() 대신 커스텀 UI 사용 권장
-            if(window.confirm('삭제하시겠습니까?')) {
+            const symbolName = favoriteSymbols[index].name;
+            openConfirmModal(`자주 찾는 종목 목록에서 '${symbolName}'을(를) 삭제하시겠습니까?`, () => {
                 favoriteSymbols.splice(index, 1);
                 localStorage.setItem('favoriteSymbols', JSON.stringify(favoriteSymbols));
                 renderModalList();
                 renderFavoriteSymbols();
-            }
+            });
         }
+        
         function renderFavoriteSymbols() { 
             const container = document.getElementById('favorite-symbols-list');
             container.innerHTML = '';
@@ -875,6 +1094,7 @@
             updateLinkModeUI(); 
             renderHomeLinks(); 
         }
+        
         function updateLinkModeUI() { 
             document.getElementById('mode-investment')?.classList.toggle('active', currentLinkMode === 'investment'); 
             document.getElementById('mode-daily')?.classList.toggle('active', currentLinkMode === 'daily'); 
@@ -883,6 +1103,7 @@
 
         function renderHomeLinks() {
             const container = document.getElementById('home-links-container');
+
             if (!container) return;
             container.innerHTML = ''; // Clear
 
@@ -893,29 +1114,46 @@
 
                 let html = `<div class="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-inner border border-slate-200 dark:border-slate-700 min-h-[400px] mindmap-root">`;
                 
-                for (const [category, links] of Object.entries(BLOG_MAP_DATA)) {
+                for (const [category, links] of Object.entries(blogMapData)) {
                     html += `
                         <div class="mindmap-branch group">
                              <div class="mindmap-line hidden md:block"></div>
                              <div class="mindmap-mobile-line block md:hidden"></div>
                              <div class="mindmap-node-main">
                                  ${category}
+                                 ${isEditMode ? `<button onclick="deleteBlogCategory('${category}')" class="absolute -top-3 -right-3 w-6 h-6 flex items-center justify-center bg-red-500 rounded-full text-white text-xs opacity-80 hover:opacity-100 transition" title="주제 삭제"><i class="fa-solid fa-times"></i></button>` : ''}
                              </div>
                              <div class="mindmap-connector hidden md:block"></div>
                              <div class="mindmap-leaves-container">
-                                 ${links.map(link => `
-                                     <a href="${link.url}" target="_blank" class="mindmap-leaf">
-                                         <i class="fa-solid fa-link text-slate-400 text-xs"></i>
-                                         <span>${link.name}</span>
-                                     </a>
+                                 ${links.map((link, index) => `
+                                     <div class="relative group">
+                                         <a href="${link.url}" target="_blank" class="mindmap-leaf">
+                                             <i class="fa-solid fa-link text-slate-400 text-xs"></i>
+                                             <span>${link.name}</span>
+                                         </a>
+                                         ${isEditMode ? `<button onclick="deleteLink('${category}', ${index})" class="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center bg-red-400 rounded-full text-white text-[10px] opacity-0 group-hover:opacity-100 transition z-20" title="링크 삭제"><i class="fa-solid fa-minus"></i></button>` : ''}
+                                     </div>
                                  `).join('')}
-                                 ${isEditMode ? `<button class="mindmap-leaf border-dashed text-slate-400 hover:text-blue-500"><i class="fa-solid fa-plus"></i></button>` : ''}
+                                 ${isEditMode ? `<button onclick="openAddLinkModal('${category}')" class="mindmap-leaf border-dashed text-slate-400 hover:text-blue-500"><i class="fa-solid fa-plus"></i> 링크 추가</button>` : ''}
                              </div>
                         </div>
                     `;
                 }
                 html += `</div>`;
-                html += `<div class="text-center text-xs text-slate-400 mt-2">* 편집 모드에서 링크 수정 기능은 추후 업데이트 예정입니다.</div>`;
+                html += `<div class="text-center text-xs text-slate-400 mt-2">* 편집 모드에서 삭제 및 추가 기능을 이용할 수 있습니다.</div>`;
+                
+                // --- ADD TOPIC CARD AT THE END OF THE MAP VIEW (IF EDIT MODE) ---
+                if (isEditMode) {
+                    html += `
+                        <div class="mt-8 pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <button onclick="openAddCategoryModal(currentLinkMode)" class="w-full bg-indigo-50 dark:bg-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-600 dark:text-indigo-300 py-3 border-2 border-dashed border-indigo-300 dark:border-indigo-600 rounded-xl text-lg font-bold transition-colors shadow-sm flex items-center justify-center gap-3">
+                                <i class="fa-solid fa-plus-circle text-xl"></i> 새 인사이트 주제 추가
+                            </button>
+                        </div>
+                    `;
+                }
+                // --- END ADD TOPIC CARD ---
+
                 container.innerHTML = html;
                 return;
             }
@@ -924,16 +1162,101 @@
             container.classList.add('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-6');
             container.classList.remove('flex', 'flex-col', 'gap-8', 'p-4');
 
-            const cats = currentLinkMode === 'investment' ? 
-                ["🌅 아침 필수 체크 (Morning Routine)", "💰 공모주 & 실적 (IPO & Earnings)", "📈 국내 시장 심층 (Korea Market)"] : 
-                ["🏡 일상 & 부동산 (Daily Life & Real Estate)"]; 
-            
+            // --- 카테고리 필터링 로직 ---
+            const allCategoryKeys = Object.keys(quickLinks);
+            // Default categories are identified by specific substrings for automatic sorting
+            const defaultInvestmentKeys = Object.keys(DEFAULT_QUICK_LINKS).filter(c => c.includes('Routine') || c.includes('IPO') || c.includes('Korea Market'));
+            const defaultDailyKeys = Object.keys(DEFAULT_QUICK_LINKS).filter(c => c.includes('Daily Life') || (!c.includes('Routine') && !c.includes('IPO') && !c.includes('Korea Market') && c.includes('Daily Life')));
+
+            let cats;
+
+            if (currentLinkMode === 'investment') {
+                // 투자: 기본 투자 카테고리 + 기본 데일리 카테고리가 아닌 모든 사용자 정의 카테고리
+                cats = allCategoryKeys.filter(key => 
+                    defaultInvestmentKeys.includes(key) || 
+                    !defaultDailyKeys.includes(key) && !defaultInvestmentKeys.includes(key)
+                );
+            } else { // daily mode
+                // 일상: 기본 일상 카테고리 + 기본 투자 카테고리가 아닌 모든 사용자 정의 카테고리
+                cats = allCategoryKeys.filter(key => 
+                    defaultDailyKeys.includes(key) || 
+                    !defaultInvestmentKeys.includes(key) && !defaultDailyKeys.includes(key)
+                );
+            }
+            // --- 카테고리 필터링 로직 끝 ---
+
             let html = '';
             for (const category of cats) { 
                 const links = quickLinks[category] || []; 
-                html += `<div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-100 dark:border-slate-700 flex flex-col h-full"><h3 class="text-lg font-bold mb-5 flex items-center justify-between text-slate-800 dark:text-slate-200 border-b pb-3 border-slate-100 dark:border-slate-700"><span>${category}</span>${isEditMode ? `<button onclick="addLink('${category}')" class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200 transition-colors"><i class="fa-solid fa-plus"></i> 추가</button>` : ''}</h3><div class="space-y-3 flex-1">${links.map((link, index) => `<div class="relative group"><a href="${link.url}" target="_blank" class="link-content link-card p-3 rounded-xl border border-slate-100 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 flex items-center gap-4 hover:bg-white dark:hover:bg-slate-600 ${isEditMode ? 'opacity-50 pointer-events-none' : ''}"><div class="w-10 h-10 rounded-lg flex items-center justify-center text-lg ${link.color} bg-opacity-30 shadow-sm"><i class="fa-solid ${link.icon}"></i></div><div class="flex-1 min-w-0"><div class="font-bold text-slate-700 dark:text-slate-200 text-base truncate">${link.name}</div><div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">${new URL(link.url).hostname}</div></div>${!isEditMode ? `<i class="fa-solid fa-arrow-up-right-from-square text-slate-300 text-xs"></i>` : ''}</a><div class="edit-controls absolute inset-y-0 right-2 flex items-center gap-1 ${isEditMode ? 'flex' : 'hidden'}"><button onclick="moveLink('${category}', ${index}, -1)" class="w-7 h-7 flex items-center justify-center bg-white border border-slate-200 rounded text-slate-500 hover:text-blue-600 hover:border-blue-400 shadow-sm"><i class="fa-solid fa-arrow-up text-xs"></i></button><button onclick="moveLink('${category}', ${index}, 1)" class="w-7 h-7 flex items-center justify-center bg-white border border-slate-200 rounded text-slate-500 hover:text-blue-600 hover:border-blue-400 shadow-sm"><i class="fa-solid fa-arrow-down text-xs"></i></button><button onclick="deleteLink('${category}', ${index})" class="w-7 h-7 flex items-center justify-center bg-red-50 border border-red-200 rounded text-red-500 hover:bg-red-100 shadow-sm"><i class="fa-solid fa-trash text-xs"></i></button></div></div>`).join('')}</div></div>`; 
+                const linkIconClass = 'fa-solid'; 
+                html += `<div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-100 dark:border-slate-700 flex flex-col h-full">
+                            <h3 class="text-lg font-bold mb-5 flex items-center justify-between text-slate-800 dark:text-slate-200 border-b pb-3 border-slate-100 dark:border-slate-700">
+                                <span>${category}</span>
+                                ${isEditMode ? `<div class="flex gap-2">
+                                    <button onclick="openAddLinkModal('${category}')" class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200 transition-colors" title="링크 추가"><i class="fa-solid fa-plus"></i> 링크</button>
+                                    <button onclick="deleteQuickLinkCategory('${category}')" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200 transition-colors" title="카테고리 삭제"><i class="fa-solid fa-trash"></i></button>
+                                </div>` : ''}
+                            </h3>
+                            <div class="space-y-3 flex-1">
+                                ${links.map((link, index) => `
+                                    <div class="relative group">
+                                        <a href="${link.url}" target="_blank" class="link-content link-card p-3 rounded-xl border border-slate-100 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 flex items-center gap-4 hover:bg-white dark:hover:bg-slate-600 ${isEditMode ? 'opacity-50 pointer-events-none' : ''}">
+                                            <div class="w-10 h-10 rounded-lg flex items-center justify-center text-lg ${link.color} bg-opacity-30 shadow-sm">
+                                                <i class="${linkIconClass} ${link.icon}"></i>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="font-bold text-slate-700 dark:text-slate-200 text-base truncate">${link.name}</div>
+                                                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">${new URL(link.url).hostname}</div>
+                                            </div>
+                                            ${!isEditMode ? `<i class="fa-solid fa-arrow-up-right-from-square text-slate-300 text-xs"></i>` : ''}
+                                        </a>
+                                        <div class="edit-controls absolute inset-y-0 right-2 flex items-center gap-1 ${isEditMode ? 'flex' : 'hidden'}">
+                                            <button onclick="moveLink('${category}', ${index}, -1)" class="w-7 h-7 flex items-center justify-center bg-white border border-slate-200 rounded text-slate-500 hover:text-blue-600 hover:border-blue-400 shadow-sm" title="위로"><i class="fa-solid fa-arrow-up text-xs"></i></button>
+                                            <button onclick="moveLink('${category}', ${index}, 1)" class="w-7 h-7 flex items-center justify-center bg-white border border-slate-200 rounded text-slate-500 hover:text-blue-600 hover:border-blue-400 shadow-sm" title="아래로"><i class="fa-solid fa-arrow-down text-xs"></i></button>
+                                            <button onclick="deleteLink('${category}', ${index})" class="w-7 h-7 flex items-center justify-center bg-red-50 border border-red-200 rounded text-red-500 hover:bg-red-100 shadow-sm" title="삭제"><i class="fa-solid fa-trash text-xs"></i></button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>`; 
             } 
+            
+            // --- ADD CATEGORY CARD AT THE END OF THE GRID VIEW (IF EDIT MODE) ---
+            if (isEditMode) {
+                const titleText = currentLinkMode === 'daily' ? '새 일상 카테고리 추가' : '새 투자 카테고리 추가';
+                html += `
+                    <button onclick="openAddCategoryModal(currentLinkMode)" class="bg-slate-100 dark:bg-slate-700 rounded-2xl p-6 shadow-inner border-2 border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center h-full text-slate-500 dark:text-slate-400 hover:border-blue-500 hover:text-blue-500 transition-colors">
+                        <i class="fa-solid fa-plus-circle text-3xl mb-2"></i>
+                        <span class="text-lg font-bold">${titleText}</span>
+                        <span class="text-sm">클릭하여 새로운 섹션을 만드세요.</span>
+                    </button>
+                `;
+            }
+            // --- END ADD CATEGORY CARD ---
+
             container.innerHTML = html; 
+        }
+
+        function deleteQuickLinkCategory(category) {
+            openConfirmModal(`'${category}' 카테고리를 삭제하시겠습니까? (안에 있는 모든 링크가 삭제됩니다)`, () => {
+                delete quickLinks[category];
+                saveLinks();
+            });
+        }
+        
+        function deleteBlogCategory(category) {
+            openConfirmModal(`'${category}' 주제를 삭제하시겠습니까? (안에 있는 모든 링크가 삭제됩니다)`, () => {
+                delete blogMapData[category];
+                saveBlogMap();
+            });
+        }
+
+        function deleteBlogLink(category, index) {
+            const linkName = blogMapData[category][index].name;
+            openConfirmModal(`'${linkName}' 링크를 삭제하시겠습니까?`, () => {
+                blogMapData[category].splice(index, 1);
+                saveBlogMap();
+            });
         }
 
         function switchPage(pageId) {
@@ -942,7 +1265,7 @@
             
             // 모든 페이지 숨김
             document.getElementById('page-dashboard').classList.add('page-hidden');
-            document.getElementById('page-routine').classList.add('page-hidden'); // [수정] 새로운 루틴 페이지 추가
+            document.getElementById('page-routine').classList.add('page-hidden'); 
             document.getElementById('page-tools').classList.add('page-hidden');
             document.getElementById('page-tax').classList.add('page-hidden');
             
@@ -956,14 +1279,23 @@
                 updateMarketStatusBadge(); 
                 renderFavoriteSymbols(); 
             }
-            else if (pageId === 'routine') { // [수정] 루틴 페이지 전환 시 링크 렌더링
+            else if (pageId === 'routine') { 
+                // 페이지 전환 시, 저장된 모드가 있다면 해당 모드로 초기화
+                const savedMode = localStorage.getItem('currentLinkMode');
+                if (savedMode) {
+                    currentLinkMode = savedMode;
+                }
+                updateLinkModeUI();
                 renderHomeLinks();
             }
             else if (pageId === 'tools') { 
                 initCalculatorInputs(); 
             }
             else if (pageId === 'tax') { 
-                updateTaxCalc(); // 탭 전환 시 자동 계산/렌더링
+                // 탭 전환 시 자동 계산/렌더링
+                renderFin();
+                renderOther();
+                updateTaxCalc(); 
             }
         }
 
@@ -976,7 +1308,7 @@
             const container = document.getElementById('heatmap-container');
             if(!container) return;
             
-            // [수정] 모바일 환경(768px 미만)에서는 위젯을 로드하지 않아 성능 개선
+            // 모바일 환경(768px 미만)에서는 위젯을 로드하지 않아 성능 개선
             if (window.innerWidth < 768) {
                  container.innerHTML = '';
                  return;
@@ -1357,7 +1689,6 @@
             const amountInput = document.getElementById('fin-amount');
 
             const amount = parseInt(amountInput.value) || 0;
-            // NOTE: alert() 대신 커스텀 UI 사용 권장
             if(amount <= 0) { console.error('금액을 입력해주세요.'); return; } 
 
             const item = {
@@ -1385,13 +1716,12 @@
         }
 
         function resetFinancial() {
-            // NOTE: confirm() 대신 커스텀 UI 사용 권장
-            if(window.confirm('금융소득 내역을 모두 삭제하시겠습니까?')) {
+            openConfirmModal('금융소득 내역을 모두 삭제하시겠습니까?', () => {
                 finData = [];
                 renderFin();
                 updateTaxCalc();
                 localStorage.removeItem('finData'); // 데이터 삭제
-            }
+            });
         }
 
         function renderFin() {
@@ -1426,7 +1756,6 @@
             const rev = parseInt(revInput.value) || 0;
             const exp = parseInt(expInput.value) || 0;
             
-            // NOTE: alert() 대신 커스텀 UI 사용 권장
             if(rev <= 0) { console.error('총수입금액을 입력해주세요.'); return; } 
 
             const net = rev - exp;
@@ -1457,13 +1786,12 @@
         }
 
         function resetOther() {
-            // NOTE: confirm() 대신 커스텀 UI 사용 권장
-            if(window.confirm('기타소득 내역을 모두 삭제하시겠습니까?')) {
+            openConfirmModal('기타소득 내역을 모두 삭제하시겠습니까?', () => {
                 otherData = [];
                 renderOther();
                 updateTaxCalc();
                 localStorage.removeItem('otherData'); // 데이터 삭제
-            }
+            });
         }
 
         function renderOther() {
@@ -1638,7 +1966,7 @@
                 document.documentElement.classList.remove('dark');
             }
             updateThemeIcon(isDark);
-
+            
             // 2. 링크 및 즐겨찾기 초기화
             initLinks(); 
             initWatchlist(); 
@@ -1654,24 +1982,27 @@
             loadTickerWidget(theme); 
             updateMarketStatusBadge(); 
             
-            // 5. 금융소득 내역 불러오기
+            // 5. 금융소득 내역 불러오기 (초기 로드)
             const savedFin = localStorage.getItem('finData');
             const savedOther = localStorage.getItem('otherData');
             finData = savedFin ? JSON.parse(savedFin) : [];
             otherData = savedOther ? JSON.parse(savedOther) : [];
             
-            // 6. 초기 탭 처리 (대시보드가 아닌 경우)
-            const initialPage = 'dashboard'; // 기본적으로 대시보드에서 시작
-            // 모든 페이지 숨김 처리
+            // 6. 초기 탭 처리: 저장된 모드가 'routine'이라면 'routine' 탭으로 시작
+            const savedLinkMode = localStorage.getItem('currentLinkMode');
+            const initialPage = savedLinkMode === 'investment' || savedLinkMode === 'daily' || savedLinkMode === 'blogs' ? 'routine' : 'dashboard'; 
+
+            // 초기 페이지 로드
+            document.getElementById('page-dashboard').classList.add('page-hidden');
             document.getElementById('page-routine').classList.add('page-hidden');
             document.getElementById('page-tools').classList.add('page-hidden');
             document.getElementById('page-tax').classList.add('page-hidden');
             
-            // 대시보드 외 다른 탭으로 시작해야 할 경우를 대비해 초기화 함수 호출
-            if (initialPage !== 'dashboard') {
-                switchPage(initialPage);
-            }
-            // 금융소득 계산기 데이터 로드 및 계산은 탭 전환 시 (switchPage('tax')) 발생하도록 함.
+            document.getElementById(`page-${initialPage}`).classList.remove('page-hidden');
+            document.getElementById(`nav-${initialPage}`).classList.add('active');
+
+            // 루틴 페이지의 내부 모드도 한번 업데이트해서 버튼 텍스트를 최신화
+            updateLinkModeUI();
         }
         
         init();

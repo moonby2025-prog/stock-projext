@@ -85,17 +85,19 @@
         
         .search-input-focus { box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
         
-        .pnl-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+        /* P&L 그리드 스타일 수정: 좁은 공간 대응을 위해 flex-col로 변경 */
+        .pnl-container {
+            display: flex; flex-direction: column; gap: 1.5rem;
         }
-        .pnl-grid > div:first-child {
-            border-right: 1px solid #e2e8f0; padding-right: 1.5rem;
+        .pnl-inputs {
+            border-bottom: 1px solid #e2e8f0; padding-bottom: 1.5rem;
         }
-        .dark .pnl-grid > div:first-child { border-right: 1px solid #334155; }
+        .dark .pnl-inputs { border-bottom: 1px solid #334155; }
         
         .calc-input {
             transition: all 0.2s; padding: 0.75rem; border-radius: 0.75rem;
             text-align: right; font-family: monospace; font-weight: 700; font-size: 1.125rem;
+            width: 100%; /* 전체 너비 사용 */
         }
         .calc-input:read-only {
             background-color: #eff6ff; border-color: #bfdbfe; color: #2563eb;
@@ -349,73 +351,181 @@
 
         <!-- PAGE 3: 도구 (계산기 모음) -->
         <div id="page-tools" class="page-hidden">
-             <!-- (기존 공모주, 평단가, 환율, 배당금, 손익, 목표단가 계산기 유지) -->
+             <!-- [수정] 3열 그리드 (상단 3개, 하단 3개 배치 유지) -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"> 
-                <!-- 1. 공모주/스팩 계산기 -->
-                <div class="bg-white rounded-2xl border-2 border-purple-200 shadow-lg dark:bg-slate-800 dark:border-purple-900 overflow-hidden">
+                
+                <!-- 1. 목표 단가 분석 (Target Price Analysis) -->
+                <div class="bg-white rounded-2xl border-2 border-indigo-200 shadow-lg dark:bg-slate-800 dark:border-indigo-900 overflow-hidden flex flex-col">
+                    <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 border-b border-indigo-100 dark:border-slate-700"><h3 class="font-bold text-indigo-800 dark:text-indigo-200 flex items-center gap-2"><i class="fa-solid fa-bullseye"></i> 목표 단가 & 가치 분석</h3></div>
+                    <div class="p-6 space-y-5 flex-1">
+                        <div class="flex justify-center mb-4 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg"><input type="radio" id="mode-cap" name="target-mode" value="cap" class="mode-toggle-radio hidden" onchange="toggleTargetMode('cap')" checked><label for="mode-cap" class="flex-1 text-center py-1.5 text-sm font-bold rounded-lg cursor-pointer transition-colors">시가총액 기반</label><input type="radio" id="mode-rate" name="target-mode" value="rate" class="mode-toggle-radio hidden" onchange="toggleTargetMode('rate')"><label for="mode-rate" class="flex-1 text-center py-1.5 text-sm font-bold rounded-lg cursor-pointer transition-colors">수익률 기반</label></div>
+                        
+                        <!-- 입력창들: 상하 배치 (flex-col) -->
+                        <div class="space-y-4">
+                            <div class="flex flex-col gap-1.5">
+                                <label id="current-price-label" class="text-sm font-bold text-slate-500 dark:text-slate-400">현재가 (매수가)</label>
+                                <input type="text" inputmode="decimal" id="target-current-price" placeholder="현재 주가" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" oninput="formatNumberInput(this); calculateTargetAnalysis()">
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-bold text-slate-500 dark:text-slate-400">보유 수량</label>
+                                <input type="text" inputmode="decimal" id="target-shares" placeholder="보유 주식 수" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" oninput="formatNumberInput(this); calculateTargetAnalysis()">
+                            </div>
+                            
+                            <div id="target-input-current-cap-row" class="flex flex-col gap-1.5">
+                                <label class="text-sm font-bold text-slate-500 dark:text-slate-400">현재 시가총액 (조)</label>
+                                <input type="text" inputmode="decimal" id="target-current-cap" placeholder="예: 350.00" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" oninput="formatNumberInput(this); calculateTargetAnalysis()">
+                            </div>
+                            
+                            <div id="target-cap-input-row" class="flex flex-col gap-1.5">
+                                <label class="text-sm font-bold text-slate-500 dark:text-slate-400">목표 시가총액 (조)</label>
+                                <input type="text" inputmode="decimal" id="target-cap" placeholder="예: 500.00" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" oninput="formatNumberInput(this); calculateTargetAnalysis()">
+                            </div>
+                            
+                            <div id="target-return-rate-input-row" class="hidden flex flex-col gap-1.5">
+                                <label id="target-rate-input-label" class="text-sm font-bold text-slate-500 dark:text-slate-400">목표 매도가</label>
+                                <input type="text" inputmode="decimal" id="target-return-rate" placeholder="예: 120000" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" oninput="formatNumberInput(this); calculateTargetAnalysis()">
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-3 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg"><div class="flex justify-between items-center"><span id="target-price-label" class="text-sm text-slate-700 dark:text-slate-200 font-bold">목표 단가:</span><div><span id="target-price" class="font-mono text-2xl font-extrabold text-indigo-700 dark:text-indigo-300">0원</span></div></div><div class="flex justify-between items-center"><span class="text-sm text-slate-500 dark:text-slate-400">총 평가 금액:</span><div><span id="target-valuation" class="font-mono text-base font-bold text-indigo-700 dark:text-indigo-300">0</span><span class="text-sm text-slate-400">원</span></div></div><div class="flex justify-between items-center"><span class="text-sm text-slate-500 dark:text-slate-400">예상 수익금:</span><div><span id="target-profit" class="font-mono text-base font-bold text-green-700 dark:text-green-300">0</span><span class="text-sm text-slate-400">원</span></div></div><div id="target-rate-row" class="flex justify-between items-center"><span class="text-xs text-slate-500 dark:text-slate-400">시총/수익률 변화:</span><span id="target-rate" class="font-mono text-sm font-bold text-slate-600 dark:text-slate-300">0.00%</span></div></div>
+                    </div>
+                </div>
+
+                <!-- 2. 손익 분석 (P&L) 계산기 -->
+                <div class="bg-white rounded-2xl border-2 border-red-200 shadow-lg dark:bg-slate-800 dark:border-red-900 overflow-hidden flex flex-col">
+                    <div class="p-4 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-slate-700"><h3 class="font-bold text-red-800 dark:text-red-200 flex items-center gap-2"><i class="fa-solid fa-percent"></i> 실현 손익 & 수익률 (P&L)</h3></div>
+                    <div class="pnl-container p-6 flex-1">
+                        <!-- P&L 입력부: 상하 배치로 변경 -->
+                        <div class="pnl-inputs space-y-4">
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-bold text-slate-500 dark:text-slate-400">총 매수 금액</label>
+                                <input type="text" inputmode="decimal" id="pl-buy-cost" placeholder="매수 비용" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-red-500 focus:ring-2 focus:ring-red-200" oninput="formatNumberInput(this); calculatePnL()">
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-bold text-slate-500 dark:text-slate-400">총 매도 금액</label>
+                                <input type="text" inputmode="decimal" id="pl-sell-revenue" placeholder="매도 금액" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-red-500 focus:ring-2 focus:ring-red-200" oninput="formatNumberInput(this); calculatePnL()">
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-bold text-slate-500 dark:text-slate-400">총 수수료율(%)</label>
+                                <input type="number" id="pl-fee-rate" placeholder="0.3" value="0.3" step="0.01" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-red-500 focus:ring-2 focus:ring-red-200" oninput="calculatePnL()">
+                            </div>
+                        </div>
+                        
+                        <!-- P&L 결과부 -->
+                        <div class="flex flex-col justify-center items-center space-y-4 pt-2">
+                            <div class="flex justify-between w-full text-sm text-slate-500 dark:text-slate-400 mb-2"><span>총 수수료/세금:</span><span id="pl-fee-total" class="font-mono font-bold text-slate-600 dark:text-slate-300">0원</span></div>
+                            <div class="text-center w-full bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl">
+                                <span class="text-sm text-slate-500 dark:text-slate-400 block mb-1">순 실현 손익 (세후)</span>
+                                <span id="pl-profit-loss" class="font-mono text-3xl sm:text-4xl font-extrabold text-green-700 dark:text-green-300 break-words">-</span>
+                            </div>
+                            <div class="text-center">
+                                <span class="text-sm text-slate-500 dark:text-slate-400 block mb-1">순 수익률</span>
+                                <span id="pl-return-rate" class="font-mono text-3xl font-bold text-green-700 dark:text-green-300">-</span> <span class="text-lg font-bold">%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 공모주/스팩 계산기 (기존 1번) -->
+                <div class="bg-white rounded-2xl border-2 border-purple-200 shadow-lg dark:bg-slate-800 dark:border-purple-900 overflow-hidden flex flex-col">
                     <div class="p-4 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-slate-700"><h3 class="font-bold text-purple-800 dark:text-purple-200 flex items-center gap-2"><i class="fa-solid fa-piggy-bank"></i> 공모주/스팩 청약</h3></div>
-                    <div class="p-6 space-y-4">
-                        <div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-20 dark:text-slate-400">종류</label><select id="ipo-type" onchange="calculateIPO()" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-bold dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200"><option value="0.5">일반 공모주 (50%)</option><option value="1.0">스팩 (SPAC) (100%)</option></select></div>
-                        <div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-20 dark:text-slate-400">공모가</label><input type="number" id="ipo-price" placeholder="예: 2000" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200" oninput="calculateIPO()"></div>
-                        <div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-20 dark:text-slate-400">최소수량</label><input type="number" id="ipo-qty" placeholder="보통 10주" value="10" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200" oninput="calculateIPO()"></div>
-                        <div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-20 dark:text-slate-400">인원수</label><input type="number" id="ipo-people" placeholder="계좌 수" value="1" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200" oninput="calculateIPO()"></div>
+                    <div class="p-6 space-y-4 flex-1">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-sm font-bold text-slate-500 dark:text-slate-400">종류</label>
+                            <select id="ipo-type" onchange="calculateIPO()" class="calc-input bg-slate-50 border border-slate-300 text-sm font-bold dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200"><option value="0.5">일반 공모주 (50%)</option><option value="1.0">스팩 (SPAC) (100%)</option></select>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-sm font-bold text-slate-500 dark:text-slate-400">공모가</label>
+                            <input type="text" inputmode="decimal" id="ipo-price" placeholder="예: 2000" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200" oninput="formatNumberInput(this); calculateIPO()">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-sm font-bold text-slate-500 dark:text-slate-400">최소수량</label>
+                            <input type="text" inputmode="decimal" id="ipo-qty" placeholder="보통 10주" value="10" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200" oninput="formatNumberInput(this); calculateIPO()">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-sm font-bold text-slate-500 dark:text-slate-400">인원수</label>
+                            <input type="number" id="ipo-people" placeholder="계좌 수" value="1" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200" oninput="calculateIPO()">
+                        </div>
                         <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 text-right bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg"><span id="ipo-rate-text" class="text-xs text-slate-400 mr-1 block mb-1">(증거금률 50%)</span><div class="flex justify-between items-center"><span class="text-sm text-slate-500 dark:text-slate-400">필요 현금:</span><div><span id="ipo-result" class="font-mono text-2xl font-extrabold text-purple-600 dark:text-purple-300">0</span> <span class="text-sm font-bold dark:text-white">원</span></div></div></div>
                     </div>
                 </div>
-                <!-- 2. 평단가 계산기 -->
-                <div class="bg-white rounded-2xl border-2 border-green-200 shadow-lg dark:bg-slate-800 dark:border-green-900 overflow-hidden">
+
+                <!-- 4. 평단가 계산기 (기존 2번) -->
+                <div class="bg-white rounded-2xl border-2 border-green-200 shadow-lg dark:bg-slate-800 dark:border-green-900 overflow-hidden flex flex-col">
                     <div class="p-4 bg-green-50 dark:bg-green-900/20 border-b border-green-100 dark:border-slate-700 flex justify-between items-center"><h3 class="font-bold text-green-800 dark:text-green-200 flex items-center gap-2"><i class="fa-solid fa-scale-balanced"></i> 평단가 계산기</h3><button onclick="addPurchaseRow()" class="text-xs bg-white text-green-600 px-3 py-1.5 rounded-lg border border-green-300 hover:bg-green-100 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700 dark:hover:bg-green-800 transition-all font-bold shadow-md"><i class="fa-solid fa-plus text-xs mr-1"></i> 추가</button></div>
-                    <div class="p-6">
+                    <div class="p-6 flex-1 flex flex-col">
                         <div class="flex justify-between text-xs text-slate-400 mb-2 px-1"><span>수량</span><span>매수 단가</span></div>
-                        <div id="average-calculator-inputs" class="space-y-2 mb-4 max-h-[250px] overflow-y-auto"></div>
+                        <div id="average-calculator-inputs" class="space-y-2 mb-4 max-h-[250px] overflow-y-auto flex-1 custom-scrollbar"></div>
                         <div class="pt-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg"><div class="flex justify-between items-center"><span class="text-sm text-slate-500 dark:text-slate-400">평균 단가:</span><div><span id="average-price" class="font-mono text-2xl font-extrabold text-green-600 dark:text-green-400">-</span> <span class="text-sm text-slate-400">원</span></div></div></div>
                     </div>
                 </div>
-                <!-- 3. 환율 계산기 -->
-                <div class="bg-white rounded-2xl border-2 border-blue-200 shadow-lg dark:bg-slate-800 dark:border-blue-900 overflow-hidden">
+
+                <!-- 5. 환율 계산기 (기존 3번) -->
+                <div class="bg-white rounded-2xl border-2 border-blue-200 shadow-lg dark:bg-slate-800 dark:border-blue-900 overflow-hidden flex flex-col">
                     <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-slate-700"><h3 class="font-bold text-blue-800 dark:text-blue-200 flex items-center gap-2"><i class="fa-solid fa-money-bill-transfer"></i> 환율 계산기</h3></div>
-                    <div class="p-6 space-y-4">
-                        <div class="flex items-center gap-2"><select id="calc-currency-select" onchange="updateExchangeUI()" class="w-40 p-3 border border-slate-300 rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white text-sm font-bold focus:border-blue-500 focus:ring-2 focus:ring-blue-200"><option value="USD">USD (미국 달러)</option><option value="KRW">KRW (원화)</option><option value="JPY">JPY (일본 엔)</option><option value="CNY">CNY (중국 위안)</option><option value="EUR">EUR (유로)</option><option value="VND">VND (베트남 동)</option><option value="THB">THB (태국 바트)</option><option value="PHP">PHP (필리핀 페소)</option><option value="INR">INR (인도 루피)</option><option value="ARS">ARS (아르헨티나 페소)</option></select><div class="flex-1 relative"><input type="number" id="calc-input-foreign" placeholder="외화 입력" oninput="calculateExchange('foreign')" class="w-full calc-input pr-10" value="0"><span id="foreign-unit" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-sm text-slate-400 dark:text-slate-500 pointer-events-none">USD</span></div></div>
-                        <div class="flex items-center gap-2"><div id="calc-bottom-unit-container" class="w-40 flex items-center justify-center"><span id="krw-label" class="text-sm font-bold text-slate-500 dark:text-slate-400">KRW (원화)</span><select id="calc-target-currency-select" onchange="calculateExchange('krw')" class="hidden p-2.5 w-full bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"></select></div><div class="flex-1 relative"><input type="text" id="calc-input-krw" placeholder="원화 입력" oninput="calculateExchange('krw')" class="w-full calc-input pr-10" value=""><span id="krw-output-unit" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-sm text-slate-400 dark:text-slate-500 pointer-events-none">원</span></div></div>
+                    <div class="p-6 space-y-6 flex-1">
+                        <!-- 환율 입력: 상하 배치 -->
+                        <div class="flex flex-col gap-2">
+                             <select id="calc-currency-select" onchange="updateExchangeUI()" class="w-full p-3 border border-slate-300 rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white text-sm font-bold focus:border-blue-500 focus:ring-2 focus:ring-blue-200"><option value="USD">USD (미국 달러)</option><option value="KRW">KRW (원화)</option><option value="JPY">JPY (일본 엔)</option><option value="CNY">CNY (중국 위안)</option><option value="EUR">EUR (유로)</option><option value="VND">VND (베트남 동)</option><option value="THB">THB (태국 바트)</option><option value="PHP">PHP (필리핀 페소)</option><option value="INR">INR (인도 루피)</option><option value="ARS">ARS (아르헨티나 페소)</option></select>
+                             <div class="relative">
+                                 <input type="text" inputmode="decimal" id="calc-input-foreign" placeholder="외화 입력" oninput="formatNumberInput(this); calculateExchange('foreign')" class="calc-input w-full pr-12" value="0">
+                                 <span id="foreign-unit" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-slate-400 dark:text-slate-500 pointer-events-none font-bold">USD</span>
+                             </div>
+                        </div>
+                        
+                        <div class="flex justify-center text-slate-300 dark:text-slate-600"><i class="fa-solid fa-arrow-down-long"></i></div>
+                        
+                        <div class="flex flex-col gap-2">
+                             <div id="calc-bottom-unit-container" class="w-full">
+                                 <span id="krw-label" class="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-1">KRW (원화)</span>
+                                 <select id="calc-target-currency-select" onchange="calculateExchange('krw')" class="hidden p-2.5 w-full bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"></select>
+                             </div>
+                             <div class="relative">
+                                 <input type="text" inputmode="decimal" id="calc-input-krw" placeholder="원화 입력" oninput="formatNumberInput(this); calculateExchange('krw')" class="calc-input w-full pr-12" value="">
+                                 <span id="krw-output-unit" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-slate-400 dark:text-slate-500 pointer-events-none font-bold">원</span>
+                             </div>
+                        </div>
                         <p class="text-[10px] text-slate-400 text-center mt-2" id="exchange-rate-note">* 대략적인 기준 환율 적용 (실시간 환율 아님)</p>
                     </div>
                 </div>
-                <!-- 4. 배당금 계산기 -->
-                <div class="bg-white rounded-2xl border-2 border-amber-200 shadow-lg dark:bg-slate-800 dark:border-amber-900 overflow-hidden">
+                
+                <!-- 6. 배당금 계산기 (기존 4번) -->
+                <div class="bg-white rounded-2xl border-2 border-amber-200 shadow-lg dark:bg-slate-800 dark:border-amber-900 overflow-hidden flex flex-col">
                     <div class="p-4 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-slate-700"><h3 class="font-bold text-amber-800 dark:text-amber-200 flex items-center gap-2"><i class="fa-solid fa-sack-dollar"></i> 배당금 계산기</h3></div>
                     <div class="p-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"><div id="div-tab-nav" class="flex space-x-1 bg-slate-200 dark:bg-slate-700 rounded-lg p-1"><button id="tab-kor" onclick="switchDividendMode('KOR')" class="flex-1 py-1.5 text-sm font-bold rounded-lg transition-all text-slate-700 dark:text-slate-200 bg-white shadow dark:bg-slate-900 active-tab">국내 주식 (KOR)</button><button id="tab-us" onclick="switchDividendMode('US')" class="flex-1 py-1.5 text-sm font-bold rounded-lg transition-all text-slate-600 dark:text-slate-300">해외 주식 (US)</button></div></div>
-                    <div id="dividend-tab-content">
-                        <div id="div-content-kor" class="p-6 space-y-4"><p class="text-xs text-slate-400 mb-4 bg-slate-100 dark:bg-slate-700 p-2 rounded-lg italic">* 국내 주식은 원화를 기준으로 계산합니다.</p><div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-20 dark:text-slate-400">주식 수</label><input type="number" id="div-shares-kor" placeholder="100" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200" oninput="calculateDividend()"></div><div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-20 dark:text-slate-400">주당 배당금 (원)</label><input type="number" id="div-per-share-kor" placeholder="500" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200" oninput="calculateDividend()"></div><div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-20 dark:text-slate-400" id="div-tax-label-kor">세율 (%)</label><input type="number" id="div-tax-rate-kor" placeholder="15.4" value="15.4" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200" oninput="calculateDividend()"></div></div>
-                        <div id="div-content-us" class="p-6 space-y-4 hidden"><p class="text-xs text-red-400 mb-4 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg italic">* 해외 주식은 USD를 기준으로 계산합니다.</p><div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-20 dark:text-slate-400">주식 수</label><input type="number" id="div-shares-us" placeholder="100" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200" oninput="calculateDividend()"></div><div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-20 dark:text-slate-400">주당 배당금 (USD)</label><input type="number" id="div-per-share-us" placeholder="1.50" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200" oninput="calculateDividend()" step="0.01"></div><div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-20 dark:text-slate-400" id="div-tax-label-us">세율 (%)</label><input type="number" id="div-tax-rate-us" placeholder="15.0" value="15.0" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200" oninput="calculateDividend()" step="0.1"></div></div>
+                    <div id="dividend-tab-content" class="flex-1">
+                        <div id="div-content-kor" class="p-6 space-y-4">
+                            <p class="text-xs text-slate-400 mb-2 bg-slate-100 dark:bg-slate-700 p-2 rounded-lg italic">* 국내 주식은 원화를 기준으로 계산합니다.</p>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-bold text-slate-500 dark:text-slate-400">주식 수</label>
+                                <input type="text" inputmode="decimal" id="div-shares-kor" placeholder="100" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200" oninput="formatNumberInput(this); calculateDividend()">
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-bold text-slate-500 dark:text-slate-400">주당 배당금 (원)</label>
+                                <input type="text" inputmode="decimal" id="div-per-share-kor" placeholder="500" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200" oninput="formatNumberInput(this); calculateDividend()">
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-bold text-slate-500 dark:text-slate-400">세율 (%)</label>
+                                <input type="number" id="div-tax-rate-kor" placeholder="15.4" value="15.4" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200" oninput="calculateDividend()">
+                            </div>
+                        </div>
+                        <div id="div-content-us" class="p-6 space-y-4 hidden">
+                            <p class="text-xs text-red-400 mb-2 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg italic">* 해외 주식은 USD를 기준으로 계산합니다.</p>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-bold text-slate-500 dark:text-slate-400">주식 수</label>
+                                <input type="text" inputmode="decimal" id="div-shares-us" placeholder="100" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200" oninput="formatNumberInput(this); calculateDividend()">
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-bold text-slate-500 dark:text-slate-400">주당 배당금 (USD)</label>
+                                <input type="text" inputmode="decimal" id="div-per-share-us" placeholder="1.50" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200" oninput="formatNumberInput(this); calculateDividend()">
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-bold text-slate-500 dark:text-slate-400">세율 (%)</label>
+                                <input type="number" id="div-tax-rate-us" placeholder="15.0" value="15.0" class="calc-input bg-slate-50 border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200" oninput="calculateDividend()" step="0.1">
+                            </div>
+                        </div>
                     </div>
                     <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 text-right bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg"><div class="flex justify-between items-center mb-1"><span class="text-xs text-slate-500 dark:text-slate-400">총 배당금 (세전):</span><span id="div-gross" class="font-mono text-base font-bold text-amber-600 dark:text-amber-400">0원</span></div><div class="flex justify-between items-center"><span class="text-sm text-slate-700 dark:text-slate-200">실수령액 (세후):</span><div><span id="div-net-result-value" class="font-mono text-2xl font-extrabold text-amber-700 dark:text-amber-300">0</span> <span id="div-net-result-unit" class="text-sm font-bold dark:text-white">원</span></div></div></div>
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mt-6"> 
-                <!-- 5. 손익 분석 (P&L) 계산기 -->
-                <div class="bg-white rounded-2xl border-2 border-red-200 shadow-lg dark:bg-slate-800 dark:border-red-900 overflow-hidden">
-                    <div class="p-4 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-slate-700"><h3 class="font-bold text-red-800 dark:text-red-200 flex items-center gap-2"><i class="fa-solid fa-percent"></i> 실현 손익 & 수익률 (P&L)</h3></div>
-                    <div class="pnl-grid p-6">
-                        <div class="space-y-4"><div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-24 dark:text-slate-400">총 매수 금액</label><input type="number" id="pl-buy-cost" placeholder="매수 비용" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-red-500 focus:ring-2 focus:ring-red-200" oninput="calculatePnL()"></div><div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-24 dark:text-slate-400">총 매도 금액</label><input type="number" id="pl-sell-revenue" placeholder="매도 금액" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-red-500 focus:ring-2 focus:ring-red-200" oninput="calculatePnL()"></div><div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-24 dark:text-slate-400">총 수수료율(%)</label><input type="number" id="pl-fee-rate" placeholder="0.3" value="0.3" step="0.01" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-red-500 focus:ring-2 focus:ring-red-200" oninput="calculatePnL()"></div><div class="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-700"><span class="text-sm text-slate-500 dark:text-slate-400">총 수수료/세금:</span><span id="pl-fee-total" class="font-mono text-base font-bold text-slate-600 dark:text-slate-300">0원</span></div></div>
-                        <div class="flex flex-col justify-center items-center space-y-4"><div class="text-center"><span class="text-sm text-slate-500 dark:text-slate-400 block mb-1">순 실현 손익 (세후/수수료 후)</span><span id="pl-profit-loss" class="font-mono text-4xl font-extrabold text-green-700 dark:text-green-300">-</span></div><div class="text-center"><span class="text-sm text-slate-500 dark:text-slate-400 block mb-1">순 수익률</span><span id="pl-return-rate" class="font-mono text-3xl font-bold text-green-700 dark:text-green-300">-</span> <span class="text-lg font-bold">%</span></div></div>
-                    </div>
-                </div>
-                <!-- 6. 목표 단가 분석 -->
-                <div class="bg-white rounded-2xl border-2 border-indigo-200 shadow-lg dark:bg-slate-800 dark:border-indigo-900 overflow-hidden">
-                    <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 border-b border-indigo-100 dark:border-slate-700"><h3 class="font-bold text-indigo-800 dark:text-indigo-200 flex items-center gap-2"><i class="fa-solid fa-bullseye"></i> 목표 단가 & 가치 분석</h3></div>
-                    <div class="p-6 space-y-4">
-                        <div class="flex justify-center mb-4 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg"><input type="radio" id="mode-cap" name="target-mode" value="cap" class="mode-toggle-radio hidden" onchange="toggleTargetMode('cap')" checked><label for="mode-cap" class="flex-1 text-center py-1.5 text-sm font-bold rounded-lg cursor-pointer transition-colors">시가총액 기반</label><input type="radio" id="mode-rate" name="target-mode" value="rate" class="mode-toggle-radio hidden" onchange="toggleTargetMode('rate')"><label for="mode-rate" class="flex-1 text-center py-1.5 text-sm font-bold rounded-lg cursor-pointer transition-colors">수익률 기반</label></div>
-                        <div class="space-y-3"><div class="flex items-center justify-between"><label id="current-price-label" class="text-sm font-medium text-slate-500 w-32 dark:text-slate-400">현재가 (매수가)</label><input type="number" id="target-current-price" placeholder="현재 주가" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" oninput="calculateTargetAnalysis()"></div><div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-32 dark:text-slate-400">보유 수량</label><input type="number" id="target-shares" placeholder="보유 주식 수" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" oninput="calculateTargetAnalysis()"></div></div>
-                        <div id="target-input-current-cap-row" class="flex items-center justify-between space-y-3"><label class="text-sm font-medium text-slate-500 w-32 dark:text-slate-400">현재 시가총액 (조)</label><input type="number" id="target-current-cap" placeholder="예: 350.00" step="0.01" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" oninput="calculateTargetAnalysis()"></div>
-                        <div id="target-cap-input-row" class="flex items-center justify-between"><label class="text-sm font-medium text-slate-500 w-32 dark:text-slate-400">목표 시가총액 (조)</label><input type="number" id="target-cap" placeholder="예: 500.00" step="0.01" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" oninput="calculateTargetAnalysis()"></div>
-                        <div id="target-return-rate-input-row" class="flex items-center justify-between hidden">
-                            <!-- [수정] 목표 수익률 입력 필드의 레이블에 ID 추가 -->
-                            <label id="target-rate-input-label" class="text-sm font-medium text-slate-500 w-32 dark:text-slate-400">목표 수익률 (%)</label>
-                            <input type="number" id="target-return-rate" placeholder="예: 20" class="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" oninput="calculateTargetAnalysis()">
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-3 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg"><div class="flex justify-between items-center"><span id="target-price-label" class="text-sm text-slate-700 dark:text-slate-200 font-bold">목표 단가:</span><div><span id="target-price" class="font-mono text-2xl font-extrabold text-indigo-700 dark:text-indigo-300">0원</span></div></div><div class="flex justify-between items-center"><span class="text-sm text-slate-500 dark:text-slate-400">총 평가 금액:</span><div><span id="target-valuation" class="font-mono text-base font-bold text-indigo-700 dark:text-indigo-300">0</span><span class="text-sm text-slate-400">원</span></div></div><div class="flex justify-between items-center"><span class="text-sm text-slate-500 dark:text-slate-400">예상 수익금:</span><div><span id="target-profit" class="font-mono text-base font-bold text-green-700 dark:text-green-300">0</span><span class="text-sm text-slate-400">원</span></div></div><div id="target-rate-row" class="flex justify-between items-center"><span class="text-xs text-slate-500 dark:text-slate-400">시총/수익률 변화:</span><span id="target-rate" class="font-mono text-sm font-bold text-slate-600 dark:text-slate-300">0.00%</span></div></div>
-                    </div>
                 </div>
             </div>
             
@@ -822,6 +932,25 @@
                     return cleaned === '' ? 0 : parseFloat(cleaned); 
                 } 
                 return Number(value) || 0; 
+            }
+            
+            // [NEW] 숫자 입력 시 자동으로 콤마 추가하는 함수
+            function formatNumberInput(input) {
+                let val = input.value.replace(/,/g, ""); // Remove existing commas
+                if (!val) return; // Allow empty
+                
+                // 정수 부분만 콤마 처리
+                if (val.indexOf('.') !== -1) {
+                     let parts = val.split('.');
+                     // 숫자 이외 제거 (소수점 유지)
+                     parts[0] = parts[0].replace(/[^0-9]/g, ''); 
+                     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                     // 소수점 이하는 그대로 (숫자만 남기기 가능하지만 입력 중 편의 위해 유지)
+                     input.value = parts.join('.'); 
+                } else {
+                     val = val.replace(/[^0-9]/g, '');
+                     input.value = val.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                }
             }
 
             // 금액을 한국 통화 형식으로 포맷
@@ -1591,8 +1720,8 @@
             
             function calculateIPO() {
                 const type = parseFloat(document.getElementById('ipo-type').value) || 0.5;
-                const price = parseInt(document.getElementById('ipo-price').value) || 0;
-                const qty = parseInt(document.getElementById('ipo-qty').value) || 10;
+                const price = parseInt(safeParseNumber(document.getElementById('ipo-price').value)) || 0;
+                const qty = parseInt(safeParseNumber(document.getElementById('ipo-qty').value)) || 10;
                 const people = parseInt(document.getElementById('ipo-people').value) || 1;
                 
                 const requiredCash = (price * qty * people) * type;
@@ -1663,7 +1792,7 @@
                     // KRW -> Foreign
                     const foreignKey = currentTargetCurrency;
                     rate = EXCHANGE_RATES[foreignKey]?.krw || 1;
-                    const krwAmount = parseFloat(inputForeign.value) || 0;
+                    const krwAmount = parseFloat(safeParseNumber(inputForeign.value)) || 0;
                     
                     result = krwAmount / rate;
                     inputKrw.value = result.toFixed(2);
@@ -1675,10 +1804,11 @@
                     // Foreign -> KRW
                     const foreignKey = currentBaseCurrency;
                     rate = EXCHANGE_RATES[foreignKey]?.krw || 1;
-                    const foreignAmount = parseFloat(inputForeign.value) || 0;
+                    const foreignAmount = parseFloat(safeParseNumber(inputForeign.value)) || 0;
                     
                     result = foreignAmount * rate;
-                    inputKrw.value = formatCurrency(result, '');
+                    // 결과는 다시 콤마 포맷
+                    inputKrw.value = Math.round(result).toLocaleString('ko-KR');
                     
                     const note = document.getElementById('exchange-rate-note');
                     note.textContent = `* 1 ${foreignKey} 당 약 ${rate.toLocaleString()}원 기준 환율 적용 (실시간 환율 아님)`;
@@ -1690,8 +1820,8 @@
                 if(!container) return; 
                 const div = document.createElement('div'); 
                 div.className = "flex gap-2 purchase-row mb-2"; 
-                // `type="number"`와 함께 `input` 이벤트 사용
-                div.innerHTML = `<input type="number" class="w-1/2 p-2 bg-slate-50 border rounded text-right qty text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-green-500 focus:ring-2 focus:ring-green-200" placeholder="수량" oninput="calcAvg()"><input type="number" class="w-1/2 p-2 bg-slate-50 border rounded text-right price text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-green-500 focus:ring-2 focus:ring-green-200" placeholder="가격" oninput="calcAvg()">`; 
+                // [수정] 평단가 계산기 입력창도 텍스트 타입으로 변경하여 콤마 지원
+                div.innerHTML = `<input type="text" inputmode="decimal" class="w-1/2 p-2 bg-slate-50 border rounded text-right qty text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-green-500 focus:ring-2 focus:ring-green-200" placeholder="수량" oninput="formatNumberInput(this); calcAvg()"><input type="text" inputmode="decimal" class="w-1/2 p-2 bg-slate-50 border rounded text-right price text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-green-500 focus:ring-2 focus:ring-green-200" placeholder="가격" oninput="formatNumberInput(this); calcAvg()">`; 
                 container.appendChild(div); 
             }
 
@@ -1804,33 +1934,33 @@
                 document.getElementById('mode-cap').checked = mode === 'cap';
                 document.getElementById('mode-rate').checked = mode === 'rate';
                 
-                document.getElementById('target-input-current-cap-row').classList.toggle('hidden', mode !== 'cap');
-                document.getElementById('target-cap-input-row').classList.toggle('hidden', mode !== 'cap');
-                document.getElementById('target-return-rate-input-row').classList.toggle('hidden', mode !== 'rate');
+                const currentCapRow = document.getElementById('target-input-current-cap-row');
+                const targetCapRow = document.getElementById('target-cap-input-row');
+                const targetReturnRateRow = document.getElementById('target-return-rate-input-row');
                 
                 const currentPriceLabel = document.getElementById('current-price-label');
                 const targetPriceLabel = document.getElementById('target-price-label');
-                const targetRateInputLabel = document.getElementById('target-rate-input-label'); // NEW ID
-                const targetRateRow = document.getElementById('target-rate-row'); // The auxiliary output row
+                const targetRateRow = document.getElementById('target-rate-row'); 
 
                 if (mode === 'cap') {
                     // 시가총액 기반: 목표 시총 입력 -> 목표 단가 출력
                     currentPriceLabel.textContent = '현재가';
                     targetPriceLabel.textContent = '목표 단가:';
-                    targetRateRow.classList.remove('hidden'); // 시총/수익률 변화를 보조 출력으로 보여줌
+                    targetRateRow.classList.remove('hidden'); 
                     
-                    // 입력 필드 초기화/라벨 원복 (목표 수익률 %)
-                    targetRateInputLabel.textContent = '목표 수익률 (%)';
-                    document.getElementById('target-return-rate').placeholder = '예: 20';
+                    currentCapRow.classList.remove('hidden');
+                    targetCapRow.classList.remove('hidden');
+                    targetReturnRateRow.classList.add('hidden');
+                    
                 } else { 
                     // 수익률 기반: 목표 매도가 입력 -> 목표 수익률 출력 (Reverse P&L)
                     currentPriceLabel.textContent = '매수가';
-                    targetPriceLabel.textContent = '목표 수익률:'; // SWAP: Output is now Rate
-                    targetRateInputLabel.textContent = '목표 매도가'; // SWAP: Input is now Price
-                    targetRateRow.classList.add('hidden'); // 보조 출력 숨김 (메인 출력이 수익률이므로)
+                    targetPriceLabel.textContent = '목표 수익률:'; 
+                    targetRateRow.classList.add('hidden'); 
                     
-                    // 입력 필드 플레이스홀더 변경
-                    document.getElementById('target-return-rate').placeholder = '예: 120000';
+                    currentCapRow.classList.add('hidden');
+                    targetCapRow.classList.add('hidden');
+                    targetReturnRateRow.classList.remove('hidden');
                 }
                 
                 calculateTargetAnalysis();

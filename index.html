@@ -259,7 +259,7 @@
         <div id="page-dashboard" class="space-y-6 animate-fade-in">
             
             <!-- 3. 장중 증시 상황 (Ticker Tape Widget) -->
-            <!-- 주의: KRX 데이터는 로컬 파일(file://) 실행 시 차단될 수 있습니다. (웹서버 권장) -->
+            <!-- 주의: KRX 데이터는 로컬 파일(file://) 실행 시 차단될 수 있으며, Vercel에서도 종종 문제가 발생합니다. -->
             <div class="w-full bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 overflow-hidden h-14">
                 <div class="tradingview-widget-container">
                     <div id="ticker-tape-container"></div>
@@ -282,6 +282,7 @@
                             </h2>
                         </div>
                         <div class="flex gap-2">
+                             <!-- KRX Heatmap 링크는 유지 -->
                              <a href="https://kr.tradingview.com/heatmap/stock/#%7B%22dataSource%22%3A%22KOSPI200%22%2C%22blockColor%22%3A%22change%22%2C%22blockSize%22%3A%22market_cap_basic%22%2C%22grouping%22%3A%22sector%22%7D" target="_blank" class="flex items-center gap-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-all dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300 dark:hover:text-blue-400">KOSPI 200 <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>
                              <a href="https://kr.tradingview.com/heatmap/stock/#%7B%22dataSource%22%3A%22KOSDAQ150%22%2C%22blockColor%22%3A%22change%22%2C%22blockSize%22%3A%22market_cap_basic%22%2C%22grouping%22%3A%22sector%22%7D" target="_blank" class="flex items-center gap-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-all dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300 dark:hover:text-blue-400">KOSDAQ 150 <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>
                         </div>
@@ -1376,23 +1377,20 @@
             script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
             script.async = true;
             
-            // [수정] 비트코인과 비트코인 도미넌스 순서 변경 (4.비트코인, 5.비트코인 도미넌스)
-            // 또한, 위젯이 멈추는 문제를 해결하기 위해 displayMode를 "adaptive"로 변경 시도
+            // [수정] 요청에 따라 불필요한 심볼 제거 (XLK, XLF, XLP, XLY, TSLA, AMZN)
+            // [수정] 은 심볼을 현물(XAGUSD)로 변경하고, 속도를 "fast"로 설정
             script.innerHTML = JSON.stringify({
                 "symbols": [
                     { "proName": "FOREXCOM:SPXUSD", "title": "S&P 500" },
                     { "proName": "NASDAQ:QQQ", "title": "나스닥 QQQ ETF" },
                     { "proName": "FX_IDC:USDKRW", "title": "원달러 환율" },
-                    { "proName": "BINANCE:BTCUSDT", "title": "비트코인" }, // 순서 변경: 비트코인 (이전 5번)
-                    { "proName": "CRYPTOCAP:BTC.D", "title": "비트코인 도미넌스" }, // 순서 변경: 비트코인 도미넌스 (이전 4번)
-                    { "proName": "KRX:KOSPI", "title": "코스피" },
-                    { "proName": "KRX:KOSDAQ", "title": "코스닥" },
-                    { "proName": "KRX:000660", "title": "SK하이닉스" }, 
-                    { "proName": "KRX:035420", "title": "NAVER" }, 
-                    { "proName": "KRX:207940", "title": "삼성바이오로직스" }, 
-                    { "proName": "KRX:005930", "title": "삼성전자" }, 
-                    { "proName": "KRX:445680", "title": "큐리옥스" }, 
-                    { "proName": "KRX:237690", "title": "에스티팜" }, 
+                    { "proName": "BINANCE:BTCUSDT", "title": "비트코인" },
+                    { "proName": "CRYPTOCAP:BTC.D", "title": "비트코인 도미넌스" },
+                    // [수정] 은 현물(XAGUSD)로 변경
+                    { "proName": "OANDA:XAGUSD", "title": "은 현물" }, 
+                    
+                    { "proName": "NASDAQ:IBB", "title": "바이오텍 ETF" }, 
+                    
                     { "proName": "NYSE:JPM", "title": "JP모건" },
                     { "proName": "NASDAQ:GOOGL", "title": "알파벳 (Google)" },
                     { "proName": "NYSE:V", "title": "비자" }
@@ -1400,8 +1398,9 @@
                 "showSymbolLogo": true,
                 "colorTheme": theme,
                 "isTransparent": true,
-                "displayMode": "adaptive", // 전광판 멈춤 문제 개선을 위해 adaptive 모드 사용
-                "locale": "kr"
+                "displayMode": "adaptive", 
+                "locale": "kr",
+                "speed": "fast" // [수정] 이동 속도를 'fast'로 설정
             });
             container.appendChild(script);
         }

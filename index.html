@@ -274,7 +274,6 @@ export default function App() {
 
   // --- Effects ---
   useEffect(() => {
-    // 1. 테마 및 로컬 데이터 로드
     const savedTheme = storage.get('theme');
     const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (savedTheme === 'dark' || (!savedTheme && sysDark)) setIsDark(true);
@@ -294,13 +293,11 @@ export default function App() {
     const savedOther = storage.getJSON('otherData');
     if (savedOther) setOtherData(savedOther);
 
-    // 2. FontAwesome 로드
     const link = document.createElement('link');
     link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
     link.rel = 'stylesheet';
     document.head.appendChild(link);
 
-    // 3. 타이머 및 시장 상태
     const timer = setInterval(() => {
       const now = new Date();
       setCurrentTime(now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }));
@@ -336,7 +333,6 @@ export default function App() {
 
     let newStatus = { text: "상태 확인 중", color: "bg-slate-500", reason: "", source: 'KRX' };
 
-    // KRX Logic (08:00 ~ 19:00)
     if (hours >= 8 && hours < 19) {
         newStatus.source = 'KRX';
         if (day === 0 || day === 6) newStatus = { ...newStatus, text: "주말 휴장", color: "bg-slate-600", reason: "주말" };
@@ -345,7 +341,6 @@ export default function App() {
         else if (totalMinutes > 930 && totalMinutes <= 1080) newStatus = { ...newStatus, text: "시간 외 거래", color: "bg-blue-600", reason: "15:40~18:00" };
         else newStatus = { ...newStatus, text: "장 마감", color: "bg-red-600", reason: "정규시간 종료" };
     } else { 
-        // US Logic (19:00 ~ 08:00)
         newStatus.source = 'US';
         if (day === 6 || (day === 0 && hours < 22)) newStatus = { ...newStatus, text: "주말 휴장", color: "bg-slate-600", reason: "주말" };
         else if (hours >= 22 || hours < 6) newStatus = { ...newStatus, text: "정규장 운영 중", color: "bg-green-600", reason: "US Market Open" }; 
@@ -517,6 +512,87 @@ export default function App() {
     else window.open(`https://finance.naver.com/item/main.naver?code=${code}`, '_blank');
   };
 
+  // --- 모달 컨텐츠 렌더링 로직 분리 (안전성 확보) ---
+  const renderModalContent = () => {
+    if (modalState.type === 'fav') {
+      return (
+        <>
+            <div className="flex gap-2">
+                <input type="text" placeholder="코드" className="w-1/3 p-2 border rounded dark:bg-slate-700" id="fav-code" />
+                <input type="text" placeholder="종목명" className="flex-1 p-2 border rounded dark:bg-slate-700" id="fav-name" />
+            </div>
+            <button onClick={() => {
+                const c = document.getElementById('fav-code').value;
+                const n = document.getElementById('fav-name').value;
+                if(c && n) {
+                    const newData = [...favoriteSymbols, { code: c, name: n }];
+                    setFavoriteSymbols(newData); storage.set('favoriteSymbols', newData);
+                    document.getElementById('fav-code').value = ''; document.getElementById('fav-name').value = '';
+                }
+            }} className="w-full bg-indigo-600 text-white py-2 rounded font-bold mt-2">추가</button>
+            <div className="max-h-60 overflow-y-auto space-y-2 mt-4">
+                {favoriteSymbols.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center bg-white dark:bg-slate-700 p-2 rounded border border-slate-200 dark:border-slate-600">
+                        <span className="text-sm font-bold"><span className="text-slate-400 mr-2 text-xs">{item.code}</span>{item.name}</span>
+                        <button onClick={() => {
+                            const newData = favoriteSymbols.filter((_, i) => i !== idx);
+                            setFavoriteSymbols(newData); storage.set('favoriteSymbols', newData);
+                        }} className="text-slate-400 hover:text-red-500"><i className="fa-solid fa-trash"></i></button>
+                    </div>
+                ))}
+            </div>
+        </>
+      );
+    } 
+    
+    // addCat or addLink
+    const isAddCat = modalState.type === 'addCat';
+    return (
+        <>
+            {isAddCat ? (
+                <input type="text" value={modalInputs.name} onChange={e => setModalInputs({...modalInputs, name: e.target.value})} placeholder="카테고리 이름" className="w-full p-3 border rounded dark:bg-slate-700" />
+            ) : (
+                <>
+                    <input type="text" value={modalInputs.name} onChange={e => setModalInputs({...modalInputs, name: e.target.value})} placeholder="링크 이름" className="w-full p-2 border rounded dark:bg-slate-700" />
+                    <input type="text" value={modalInputs.url} onChange={e => setModalInputs({...modalInputs, url: e.target.value})} placeholder="URL" className="w-full p-2 border rounded dark:bg-slate-700" />
+                    {linkMode !== 'blogs' && (
+                        <div className="flex gap-2">
+                            <input type="text" value={modalInputs.icon} onChange={e => setModalInputs({...modalInputs, icon: e.target.value})} placeholder="fa-icon" className="w-1/2 p-2 border rounded dark:bg-slate-700 text-sm" />
+                            <input type="text" value={modalInputs.color} onChange={e => setModalInputs({...modalInputs, color: e.target.value})} placeholder="bg-color text-color" className="w-1/2 p-2 border rounded dark:bg-slate-700 text-sm" />
+                        </div>
+                    )}
+                </>
+            )}
+            <button onClick={() => {
+                if (isAddCat) {
+                    if(!modalInputs.name) return;
+                    if(linkMode === 'blogs') {
+                        const newData = {...blogMapData, [modalInputs.name]: []};
+                        setBlogMapData(newData); storage.set('myBlogMapData', newData);
+                    } else {
+                        const newData = {...quickLinks, [modalInputs.name]: []};
+                        setQuickLinks(newData); storage.set('myQuickLinks', newData);
+                    }
+                } else {
+                    if(!modalInputs.name || !modalInputs.url) return;
+                    const newLink = { name: modalInputs.name, url: modalInputs.url, icon: modalInputs.icon, color: modalInputs.color };
+                    if(linkMode === 'blogs') {
+                        const newData = {...blogMapData};
+                        newData[modalState.category].push(newLink);
+                        setBlogMapData(newData); storage.set('myBlogMapData', newData);
+                    } else {
+                        const newData = {...quickLinks};
+                        newData[modalState.category].push(newLink);
+                        setQuickLinks(newData); storage.set('myQuickLinks', newData);
+                    }
+                }
+                setModalState({ type: null, category: null });
+                setModalInputs({ name: '', url: '', icon: 'fa-link', color: 'bg-slate-100 text-slate-700' });
+            }} className="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 mt-4">저장</button>
+        </>
+    );
+  };
+
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-200 ${isDark ? 'dark bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
       <style>{`
@@ -572,7 +648,6 @@ export default function App() {
       </header>
 
       <main className="max-w-7xl w-full mx-auto px-4 py-6 flex-1">
-        
         {/* PAGE 1: Dashboard */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6 animate-fade-in">
@@ -673,7 +748,6 @@ export default function App() {
 
              <div className={`${linkMode === 'blogs' ? 'flex flex-col gap-8' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'}`}>
                 {linkMode === 'blogs' ? (
-                   // Mind Map View
                    Object.entries(blogMapData).map(([category, links]) => (
                       <div key={category} className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-inner border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row items-center gap-6 relative group">
                          <div className="mindmap-node-main text-white px-6 py-3 rounded-xl font-bold min-w-[150px] text-center z-10 relative">
@@ -703,10 +777,8 @@ export default function App() {
                       </div>
                    ))
                 ) : (
-                   // Grid View (Investment & Daily)
                    Object.entries(quickLinks).filter(([key]) => {
                       const isDaily = key.includes('Daily') || key.includes('부동산');
-                      // 투자모드: 데일리가 아닌것, 데일리모드: 데일리인것
                       return linkMode === 'daily' ? isDaily : !isDaily;
                    }).map(([category, links]) => (
                       <div key={category} className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-100 dark:border-slate-700 flex flex-col h-full relative group">
@@ -819,7 +891,7 @@ export default function App() {
                  </div>
               </div>
 
-              {/* 2. P&L Calculator (Vertical Layout) */}
+              {/* 2. P&L Calculator */}
               <div className="bg-white dark:bg-slate-800 rounded-2xl border-2 border-red-200 dark:border-red-900 overflow-hidden shadow-lg">
                  <div className="p-4 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-slate-700 font-bold text-red-800 dark:text-red-200">
                     <i className="fa-solid fa-percent mr-2"></i> 실현 손익 (P&L)
@@ -1129,77 +1201,7 @@ export default function App() {
                   </div>
                   
                   <div className="p-5 space-y-4 bg-slate-50 dark:bg-slate-900/50">
-                      {modalState.type === 'fav' ? (
-                          <>
-                            <div className="flex gap-2">
-                                <input type="text" placeholder="코드" className="w-1/3 p-2 border rounded dark:bg-slate-700" id="fav-code" />
-                                <input type="text" placeholder="종목명" className="flex-1 p-2 border rounded dark:bg-slate-700" id="fav-name" />
-                            </div>
-                            <button onClick={() => {
-                                const c = document.getElementById('fav-code').value;
-                                const n = document.getElementById('fav-name').value;
-                                if(c && n) {
-                                    const newData = [...favoriteSymbols, { code: c, name: n }];
-                                    setFavoriteSymbols(newData); storage.set('favoriteSymbols', newData);
-                                    document.getElementById('fav-code').value = ''; document.getElementById('fav-name').value = '';
-                                }
-                            }} className="w-full bg-indigo-600 text-white py-2 rounded font-bold">추가</button>
-                            <div className="max-h-60 overflow-y-auto space-y-2 mt-4">
-                                {favoriteSymbols.map((item, idx) => (
-                                    <div key={idx} className="flex justify-between items-center bg-white dark:bg-slate-700 p-2 rounded border border-slate-200 dark:border-slate-600">
-                                        <span className="text-sm font-bold"><span className="text-slate-400 mr-2 text-xs">{item.code}</span>{item.name}</span>
-                                        <button onClick={() => {
-                                            const newData = favoriteSymbols.filter((_, i) => i !== idx);
-                                            setFavoriteSymbols(newData); storage.set('favoriteSymbols', newData);
-                                        }} className="text-slate-400 hover:text-red-500"><i className="fa-solid fa-trash"></i></button>
-                                    </div>
-                                ))}
-                            </div>
-                          </>
-                      ) : (
-                          <>
-                            {modalState.type === 'addCat' ? (
-                                <input type="text" value={modalInputs.name} onChange={e => setModalInputs({...modalInputs, name: e.target.value})} placeholder="카테고리 이름" className="w-full p-3 border rounded dark:bg-slate-700" />
-                            ) : (
-                                <>
-                                    <input type="text" value={modalInputs.name} onChange={e => setModalInputs({...modalInputs, name: e.target.value})} placeholder="링크 이름" className="w-full p-2 border rounded dark:bg-slate-700" />
-                                    <input type="text" value={modalInputs.url} onChange={e => setModalInputs({...modalInputs, url: e.target.value})} placeholder="URL" className="w-full p-2 border rounded dark:bg-slate-700" />
-                                    {linkMode !== 'blogs' && (
-                                        <div className="flex gap-2">
-                                            <input type="text" value={modalInputs.icon} onChange={e => setModalInputs({...modalInputs, icon: e.target.value})} placeholder="fa-icon" className="w-1/2 p-2 border rounded dark:bg-slate-700 text-sm" />
-                                            <input type="text" value={modalInputs.color} onChange={e => setModalInputs({...modalInputs, color: e.target.value})} placeholder="bg-color text-color" className="w-1/2 p-2 border rounded dark:bg-slate-700 text-sm" />
-                                        </div>
-                                    )}
-                                </>
-                            )}
-                            <button onClick={() => {
-                                if (modalState.type === 'addCat') {
-                                    if(!modalInputs.name) return;
-                                    if(linkMode === 'blogs') {
-                                        const newData = {...blogMapData, [modalInputs.name]: []};
-                                        setBlogMapData(newData); storage.set('myBlogMapData', newData);
-                                    } else {
-                                        const newData = {...quickLinks, [modalInputs.name]: []};
-                                        setQuickLinks(newData); storage.set('myQuickLinks', newData);
-                                    }
-                                } else {
-                                    if(!modalInputs.name || !modalInputs.url) return;
-                                    const newLink = { name: modalInputs.name, url: modalInputs.url, icon: modalInputs.icon, color: modalInputs.color };
-                                    if(linkMode === 'blogs') {
-                                        const newData = {...blogMapData};
-                                        newData[modalState.category].push(newLink);
-                                        setBlogMapData(newData); storage.set('myBlogMapData', newData);
-                                    } else {
-                                        const newData = {...quickLinks};
-                                        newData[modalState.category].push(newLink);
-                                        setQuickLinks(newData); storage.set('myQuickLinks', newData);
-                                    }
-                                }
-                                setModalState({ type: null, category: null });
-                                setModalInputs({ name: '', url: '', icon: 'fa-link', color: 'bg-slate-100 text-slate-700' });
-                            }} className="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700">저장</button>
-                          </>
-                      )}
+                      {renderModalContent()}
                   </div>
               </div>
           </div>

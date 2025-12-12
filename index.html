@@ -120,8 +120,7 @@ const storage = {
   }
 };
 
-// --- 트레이딩뷰 위젯 컴포넌트 (React.memo 및 최적화) ---
-// 안전한 로딩을 위해 setTimeout을 사용하여 스크립트 삽입을 지연(Debounce)시킴
+// --- 트레이딩뷰 위젯 컴포넌트 ---
 const TradingViewTicker = React.memo(({ theme }) => {
   const containerRef = useRef(null);
   
@@ -129,12 +128,10 @@ const TradingViewTicker = React.memo(({ theme }) => {
     const container = containerRef.current;
     if (!container) return;
     
-    // 1. 기존 내용 초기화
     container.innerHTML = '';
     
-    // 2. 타이머 설정: 100ms 딜레이 후 스크립트 삽입 (빠른 리렌더링 시 스크립트 실행 방지)
     const timerId = setTimeout(() => {
-        if (!container) return; // double check
+        if (!container) return;
 
         const widgetContainer = document.createElement('div');
         widgetContainer.className = 'tradingview-widget-container__widget';
@@ -167,12 +164,9 @@ const TradingViewTicker = React.memo(({ theme }) => {
         container.appendChild(script);
     }, 100);
     
-    // Cleanup: 컴포넌트 해제 시 타이머 취소 및 컨테이너 비우기
     return () => {
-        clearTimeout(timerId); // 중요: 언마운트 시 예정된 스크립트 실행 취소
-        if (container) {
-           container.innerHTML = '';
-        }
+        clearTimeout(timerId);
+        if (container) container.innerHTML = '';
     };
   }, [theme]);
   
@@ -220,9 +214,7 @@ const TradingViewHeatmap = React.memo(({ theme, source }) => {
 
     return () => {
         clearTimeout(timerId);
-        if (container) {
-           container.innerHTML = '';
-        }
+        if (container) container.innerHTML = '';
     };
   }, [theme, source]);
   
@@ -248,34 +240,28 @@ export default function App() {
   const [marketStatus, setMarketStatus] = useState({ text: '상태 확인 중', color: 'bg-slate-500', reason: '', source: 'KRX' });
 
   // 계산기 상태
-  // 1. 목표 단가
   const [targetInputs, setTargetInputs] = useState({ price: '', shares: '', currentCap: '', targetCap: '', targetRate: '' });
-  const [targetMode, setTargetMode] = useState('cap'); // 'cap' or 'rate'
+  const [targetMode, setTargetMode] = useState('cap'); 
   const [targetResult, setTargetResult] = useState({ price: 0, valuation: 0, profit: 0, rateChange: 0 });
 
-  // 2. 손익 (P&L)
   const [pnlInputs, setPnlInputs] = useState({ buy: '', sell: '', fee: 0.3 });
   const [pnlResult, setPnlResult] = useState({ net: 0, rate: 0, feeTotal: 0 });
 
-  // 3. 공모주
   const [ipoInputs, setIpoInputs] = useState({ type: 0.5, price: '', qty: 10, people: 1 });
   const [ipoResult, setIpoResult] = useState(0);
 
-  // 4. 환율
   const [exchBase, setExchBase] = useState('USD');
   const [exchTarget, setExchTarget] = useState('KRW');
   const [exchInputs, setExchInputs] = useState({ foreign: '', krw: '' });
 
-  // 5. 평단가
   const [avgRows, setAvgRows] = useState([{ q: '', p: '' }, { q: '', p: '' }, { q: '', p: '' }, { q: '', p: '' }]);
   const [avgResult, setAvgResult] = useState(0);
 
-  // 6. 배당금
   const [divMode, setDivMode] = useState('KOR');
   const [divInputs, setDivInputs] = useState({ shares: '', perShare: '', tax: 15.4 });
   const [divResult, setDivResult] = useState({ gross: 0, net: 0 });
 
-  // 7. 세금
+  // 세금 상태
   const [finData, setFinData] = useState([]);
   const [otherData, setOtherData] = useState([]);
   const [taxCalc, setTaxCalc] = useState({ step1: 0, step2: 0, total: 0, finTotal: 0, otherTotal: 0, grandTotal: 0, isTaxable: false });
@@ -283,7 +269,7 @@ export default function App() {
   const [otherInput, setOtherInput] = useState({ desc: '', rev: '', exp: '' });
 
   // 모달 상태
-  const [modalState, setModalState] = useState({ type: null, category: null }); // type: 'addLink', 'addCat', 'fav', 'confirm'
+  const [modalState, setModalState] = useState({ type: null, category: null });
   const [modalInputs, setModalInputs] = useState({ name: '', url: '', icon: 'fa-link', color: 'bg-slate-100 text-slate-700' });
 
   // --- Effects ---
@@ -366,7 +352,6 @@ export default function App() {
         else newStatus = { ...newStatus, text: "장 마감", color: "bg-red-600", reason: "Pre/After Close" };
     }
     
-    // 상태가 실제로 변경되었을 때만 업데이트 (불필요한 리렌더링 방지)
     setMarketStatus(prev => {
         if (JSON.stringify(prev) !== JSON.stringify(newStatus)) {
             return newStatus;
@@ -481,7 +466,6 @@ export default function App() {
       setDivResult({ gross, net });
   };
 
-  // --- 세금 계산 로직 (누진세 반영) ---
   const getIncomeTax = (income) => {
       if (income <= 0) return 0;
       if (income <= 14000000) return income * 0.06;
@@ -525,7 +509,6 @@ export default function App() {
     });
   };
 
-  // --- Helper Functions ---
   const formatCurrency = (val, unit='원') => Math.round(val || 0).toLocaleString() + (unit ? ` ${unit}` : '');
   
   const searchSymbol = (query) => {
@@ -534,7 +517,6 @@ export default function App() {
     else window.open(`https://finance.naver.com/item/main.naver?code=${code}`, '_blank');
   };
 
-  // --- Render Helpers ---
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-200 ${isDark ? 'dark bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
       <style>{`

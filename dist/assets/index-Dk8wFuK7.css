@@ -1,0 +1,1 @@
+@tailwind base;@tailwind components;@tailwind utilities;body{@apply antialiased min-h-screen transition-colors duration-200;}

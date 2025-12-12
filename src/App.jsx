@@ -260,8 +260,10 @@ export default function App() {
   const [otherData, setOtherData] = useState([]);
   
   // Modal States
+  // 'fav' 모달에서 사용할 입력 상태의 초기 구조를 명확히 했습니다.
+  const initialModalInputs = { name: '', url: '', code: '', icon: '', color: '' };
   const [modal, setModal] = useState({ open: false, type: null, category: null }); // type: 'fav', 'link', 'cat'
-  const [modalInputs, setModalInputs] = useState({ name: '', url: '', code: '', icon: '', color: '' });
+  const [modalInputs, setModalInputs] = useState(initialModalInputs);
   const [confirmModal, setConfirmModal] = useState({ open: false, msg: '', action: null });
 
   // --- Effects ---
@@ -847,7 +849,11 @@ export default function App() {
     if (!modal.open) return null;
 
     // 모달 닫기 함수
-    const closeModal = () => setModal({ open: false, type: null, category: null });
+    const closeModal = () => {
+      setModal({ open: false, type: null, category: null });
+      // 모달 닫을 때 입력 상태 초기화
+      setModalInputs(initialModalInputs); 
+    };
     
     return (
       <div className="fixed inset-0 bg-slate-900/70 z-[100] flex items-center justify-center animate-fade-in px-4">
@@ -863,16 +869,18 @@ export default function App() {
            {modal.type === 'fav' ? (
                <div className="space-y-3">
                    <div className="flex gap-2">
-                      <input type="text" placeholder="코드 (예: 005930)" className="flex-1 p-2 border rounded dark:bg-slate-700" value={modalInputs.code} onChange={e => setModalInputs({...modalInputs, code: e.target.value})} />
-                      <input type="text" placeholder="종목명" className="flex-1 p-2 border rounded dark:bg-slate-700" value={modalInputs.name} onChange={e => setModalInputs({...modalInputs, name: e.target.value})} />
+                      {/* [수정 반영] 종목 코드 입력 필드: w-1/2 적용 */}
+                      <input type="text" placeholder="코드 (예: 005930)" className="w-1/2 p-2 border rounded dark:bg-slate-700" value={modalInputs.code} onChange={e => setModalInputs(prev => ({...prev, code: e.target.value}))} />
+                      {/* [수정 반영] 종목명 입력 필드: w-1/2 적용 (공간 벗어남 문제 해결) */}
+                      <input type="text" placeholder="종목명" className="w-1/2 p-2 border rounded dark:bg-slate-700" value={modalInputs.name} onChange={e => setModalInputs(prev => ({...prev, name: e.target.value}))} />
                    </div>
                    
                    <button onClick={() => {
                        if (modalInputs.code && modalInputs.name) {
                            const newData = [...favoriteSymbols, { code: modalInputs.code.toUpperCase(), name: modalInputs.name }];
                            setFavoriteSymbols(newData); storage.set('favoriteSymbols', newData);
-                           // 모달 닫지 않고 입력 필드만 초기화하여 연속 추가 가능
-                           setModalInputs({ code: '', name: '', url: '' });
+                           // 종목 추가 후 입력 필드 초기화 (modalInputs 재설정)
+                           setModalInputs(initialModalInputs);
                        }
                    }} className="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-700 transition">자주 찾는 종목 추가</button>
 
@@ -897,24 +905,26 @@ export default function App() {
                </div>
            ) : modal.type === 'cat' ? (
                <div className="space-y-3">
-                   <input type="text" placeholder="카테고리 이름" className="w-full p-2 border rounded dark:bg-slate-700" value={modalInputs.name} onChange={e => setModalInputs({...modalInputs, name: e.target.value})} />
+                   {/* value와 onChange가 modalInputs.name과 정확히 연결 */}
+                   <input type="text" placeholder="카테고리 이름" className="w-full p-2 border rounded dark:bg-slate-700" value={modalInputs.name} onChange={e => setModalInputs(prev => ({...prev, name: e.target.value}))} />
                    <button onClick={() => {
                        if (!modalInputs.name) return;
                        if (linkMode === 'blogs') {
                            const newData = { ...blogMapData, [modalInputs.name]: [] };
                            setBlogMapData(newData); storage.set('myBlogMapData', newData);
                        } else {
-                           const newData = { ...quickLinks }; newData[modalInputs.name] = [];
+                           const newData = { ...quickLinks, [modalInputs.name]: [] };
                            setQuickLinks(newData); storage.set('myQuickLinks', newData);
                        }
                        closeModal(); // 성공 시 모달 닫기
-                       setModalInputs({ name: '' });
                    }} className="w-full bg-blue-600 text-white py-2 rounded font-bold">추가</button>
                </div>
            ) : (
                <div className="space-y-3">
-                   <input type="text" placeholder="링크 이름" className="w-full p-2 border rounded dark:bg-slate-700" value={modalInputs.name} onChange={e => setModalInputs({...modalInputs, name: e.target.value})} />
-                   <input type="text" placeholder="URL" className="w-full p-2 border rounded dark:bg-slate-700" value={modalInputs.url} onChange={e => setModalInputs({...modalInputs, url: e.target.value})} />
+                   {/* value와 onChange가 modalInputs.name과 정확히 연결 */}
+                   <input type="text" placeholder="링크 이름" className="w-full p-2 border rounded dark:bg-slate-700" value={modalInputs.name} onChange={e => setModalInputs(prev => ({...prev, name: e.target.value}))} />
+                   {/* value와 onChange가 modalInputs.url과 정확히 연결 */}
+                   <input type="text" placeholder="URL" className="w-full p-2 border rounded dark:bg-slate-700" value={modalInputs.url} onChange={e => setModalInputs(prev => ({...prev, url: e.target.value}))} />
                    <button onClick={() => {
                        if (!modalInputs.name || !modalInputs.url) return;
                        const newLink = { name: modalInputs.name, url: modalInputs.url, icon: 'fa-link', color: 'bg-slate-100 text-slate-700' };
@@ -926,7 +936,6 @@ export default function App() {
                            setQuickLinks(newData); storage.set('myQuickLinks', newData);
                        }
                        closeModal(); // 성공 시 모달 닫기
-                       setModalInputs({ name: '', url: '' });
                    }} className="w-full bg-blue-600 text-white py-2 rounded font-bold">추가</button>
                </div>
            )}
